@@ -93,7 +93,7 @@ open OhMyAndroid.xcodeproj
 ```
 
 Needs Xcode 26. Local builds are ad-hoc signed; no Apple Developer account needed.
-The app icon is drawn in code: `Scripts/make-icon.swift`.
+The app and menu bar icons are drawn in code: `Scripts/make-icon.swift`.
 
 ## Architecture
 
@@ -141,4 +141,9 @@ features. While no device is ready, Oh My Android re-checks every 4 s until one 
 
 ## License
 
-[MIT](LICENSE) © 2026 Royan AB. Android is a trademark of Google LLC. Oh My Android is not affiliated with Google.
+[MIT](LICENSE) © 2026 Royan AB. Android is a trademark of Google LLC. Oh My Android is not affiliated with
+or endorsed by Google.
+
+The Android robot is reproduced or modified from work created and shared by Google and used according
+to terms described in the [Creative Commons 3.0 Attribution License](https://creativecommons.org/licenses/by/3.0/).
+The icons are drawn in code by `Scripts/make-icon.swift`.

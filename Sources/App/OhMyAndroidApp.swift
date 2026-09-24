@@ -5,8 +5,10 @@ struct OhMyAndroidApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     var body: some Scene {
-        MenuBarExtra("Oh My Android", systemImage: "mountain.2.fill") {
+        MenuBarExtra {
             MenuBarContent(delegate: delegate)
+        } label: {
+            Image("MenuBarIcon").accessibilityLabel("Oh My Android")
         }
         Settings {
             SettingsView().environment(delegate.model)

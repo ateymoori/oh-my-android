@@ -1,13 +1,18 @@
 #!/usr/bin/env swift
-// Draws the Oh My Android app icon with Core Graphics and writes every size the asset catalog needs.
-// Usage: Scripts/make-icon.swift [output-folder]   (default: Sources/App/Assets.xcassets/AppIcon.appiconset)
+// Draws the Oh My Android icons with Core Graphics:
+//   - the app icon, every size the asset catalog needs
+//   - the menu bar icon, a template image (robot head)
+// Usage: Scripts/make-icon.swift [assets-folder]   (default: Sources/App/Assets.xcassets)
 //
-// Motif: a mountain at dawn. A sharp snow-capped peak against a sunrise sky, green foothills in front
-// (a nod to Android). Layout follows the macOS icon grid: 824 pt body inside a 1024 pt canvas.
+// Motif: the Android robot caught by surprise: "Oh my!" Wide eyes, open mouth, arms up.
+// Layout follows the macOS icon grid: 824 pt body inside a 1024 pt canvas.
+// The Android robot is reproduced or modified from work created and shared by Google and used
+// according to terms described in the Creative Commons 3.0 Attribution License.
 import AppKit
 import CoreGraphics
 
-let output = CommandLine.arguments.dropFirst().first ?? "Sources/App/Assets.xcassets/AppIcon.appiconset"
+let assets = CommandLine.arguments.dropFirst().first ?? "Sources/App/Assets.xcassets"
+let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 
 func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {
     CGColor(
@@ -16,41 +21,67 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {
     )
 }
 
-func linearGradient(_ context: CGContext, _ colors: [CGColor], from: CGPoint, to: CGPoint) {
-    let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors as CFArray, locations: nil)!
-    context.drawLinearGradient(gradient, start: from, end: to, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+func gradient(_ colors: [CGColor]) -> CGGradient {
+    CGGradient(colorsSpace: sRGB, colors: colors as CFArray, locations: nil)!
 }
 
-/// Closed polygon through the points, filled with a vertical gradient (top color first).
-func ridge(_ context: CGContext, _ points: [CGPoint], top: CGColor, bottom: CGColor, body: CGRect) {
-    let path = CGMutablePath()
-    path.addLines(between: points)
-    path.closeSubpath()
-    context.saveGState()
-    context.addPath(path)
-    context.clip()
-    let maxY = points.map(\.y).max()!
-    linearGradient(context, [top, bottom], from: CGPoint(x: 0, y: maxY), to: CGPoint(x: 0, y: body.minY))
-    context.restoreGState()
+/// Straight bar with round ends, drawn as a stroked line.
+func capsule(_ context: CGContext, from: CGPoint, to: CGPoint, width: CGFloat) {
+    context.setLineWidth(width)
+    context.setLineCap(.round)
+    context.move(to: from)
+    context.addLine(to: to)
+    context.strokePath()
 }
 
-func drawIcon(size: Int) -> Data {
-    let scale = CGFloat(size) / 1024
+// MARK: - Robot
+
+/// Robot parts as paths, in icon coordinates (y up). Shared by the app icon and the menu bar icon.
+enum Robot {
+    static let headCenter = CGPoint(x: 512, y: 520)
+    static let headRadius: CGFloat = 250
+
+    static var head: CGPath {
+        let path = CGMutablePath()
+        path.addArc(center: headCenter, radius: headRadius, startAngle: 0, endAngle: .pi, clockwise: false)
+        path.closeSubpath()
+        return path
+    }
+
+    /// Antennas, spread wide: the robot is startled.
+    static let antennas: [(CGPoint, CGPoint)] = [
+        (CGPoint(x: 400, y: 730), CGPoint(x: 322, y: 858)),
+        (CGPoint(x: 624, y: 730), CGPoint(x: 702, y: 858)),
+    ]
+
+    static var body: CGPath {
+        CGPath(roundedRect: CGRect(x: 262, y: 40, width: 500, height: 460), cornerWidth: 70, cornerHeight: 70, transform: nil)
+    }
+
+    /// Both arms thrown up beside the head.
+    static let arms: [(CGPoint, CGPoint)] = [
+        (CGPoint(x: 200, y: 440), CGPoint(x: 150, y: 690)),
+        (CGPoint(x: 824, y: 440), CGPoint(x: 874, y: 690)),
+    ]
+}
+
+// MARK: - App icon
+
+func drawAppIcon(size: Int) -> Data {
     let context = CGContext(
         data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
-        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        space: sRGB, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
     )!
-    context.scaleBy(x: scale, y: scale)
-    context.interpolationQuality = .high
+    context.scaleBy(x: CGFloat(size) / 1024, y: CGFloat(size) / 1024)
 
-    let body = CGRect(x: 100, y: 100, width: 824, height: 824)
-    let shape = CGPath(roundedRect: body, cornerWidth: 185, cornerHeight: 185, transform: nil)
+    let frame = CGRect(x: 100, y: 100, width: 824, height: 824)
+    let shape = CGPath(roundedRect: frame, cornerWidth: 185, cornerHeight: 185, transform: nil)
 
-    // Soft drop shadow, as on system icons.
+    // Drop shadow, as on system icons.
     context.saveGState()
     context.setShadow(offset: CGSize(width: 0, height: -10), blur: 24, color: color(0x000000, 0.35))
     context.addPath(shape)
-    context.setFillColor(color(0x1B2350))
+    context.setFillColor(color(0x0F2A3F))
     context.fillPath()
     context.restoreGState()
 
@@ -58,84 +89,138 @@ func drawIcon(size: Int) -> Data {
     context.addPath(shape)
     context.clip()
 
-    // Dawn sky: deep indigo at the top, warm peach at the horizon.
-    linearGradient(context, [color(0x141B4D), color(0x4A3F8F), color(0xE9866A), color(0xFFC98B)],
-                   from: CGPoint(x: 0, y: body.maxY), to: CGPoint(x: 0, y: body.minY + 250))
+    // Background: deep teal night with a soft spotlight behind the robot.
+    context.drawLinearGradient(gradient([color(0x173B57), color(0x0B1B2B)]),
+                               start: CGPoint(x: 0, y: frame.maxY), end: CGPoint(x: 0, y: frame.minY), options: [])
+    let spot = CGPoint(x: 512, y: 560)
+    context.drawRadialGradient(gradient([color(0x3DDC84, 0.35), color(0x3DDC84, 0)]),
+                               startCenter: spot, startRadius: 0, endCenter: spot, endRadius: 440, options: [])
 
-    // Rising sun beside the summit.
-    let sun = CGPoint(x: 700, y: 650)
-    let glow = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB),
-                          colors: [color(0xFFE3A3, 0.9), color(0xFFB36B, 0.0)] as CFArray, locations: [0, 1])!
-    context.drawRadialGradient(glow, startCenter: sun, startRadius: 0, endCenter: sun, endRadius: 260, options: [])
-    context.setFillColor(color(0xFFF1CF))
-    context.fillEllipse(in: CGRect(x: sun.x - 78, y: sun.y - 78, width: 156, height: 156))
+    // Robot and shock marks at 78 %, so the raised arms stay inside the frame.
+    context.saveGState()
+    context.translateBy(x: 512, y: 440)
+    context.scaleBy(x: 0.78, y: 0.78)
+    context.translateBy(x: -512, y: -440)
 
-    // Distant range.
-    ridge(context, [CGPoint(x: 60, y: 430), CGPoint(x: 250, y: 560), CGPoint(x: 360, y: 500), CGPoint(x: 700, y: 600),
-                    CGPoint(x: 980, y: 440), CGPoint(x: 980, y: 60), CGPoint(x: 60, y: 60)],
-          top: color(0x7C6FB8), bottom: color(0x3E3A7A), body: body)
+    // "Shock" marks beside the head.
+    context.setStrokeColor(color(0xFFD54F))
+    for side: CGFloat in [-1, 1] {
+        for (offset, length) in [(CGFloat(0), CGFloat(56)), (46, 40), (-46, 40)] {
+            let base = CGPoint(x: 512 + side * 318, y: 812 + offset)
+            capsule(context, from: base, to: CGPoint(x: base.x + side * length, y: base.y + offset * 0.35), width: 18)
+        }
+    }
 
-    // The peak: a steep, symmetric pyramid.
-    let summit = CGPoint(x: 512, y: 780)
-    let left = CGPoint(x: 150, y: 250), right = CGPoint(x: 874, y: 250)
-    ridge(context, [left, summit, right, CGPoint(x: 874, y: 60), CGPoint(x: 150, y: 60)],
-          top: color(0x2B3A78), bottom: color(0x151C45), body: body)
-    // Sunlit left face.
-    ridge(context, [left, summit, CGPoint(x: 470, y: 250)],
-          top: color(0x4B5CA8), bottom: color(0x27336D), body: body)
+    // Robot, in Android green with a gentle top light.
+    let green = gradient([color(0x5BEA9C), color(0x3DDC84), color(0x2AB86C)])
+    func fillGreen(_ path: CGPath, top: CGFloat, bottom: CGFloat) {
+        context.saveGState()
+        context.addPath(path)
+        context.clip()
+        context.drawLinearGradient(green, start: CGPoint(x: 0, y: top), end: CGPoint(x: 0, y: bottom), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        context.restoreGState()
+    }
+    context.setStrokeColor(color(0x3DDC84))
+    for (from, to) in Robot.antennas { capsule(context, from: from, to: to, width: 30) }
+    for (from, to) in Robot.arms { capsule(context, from: from, to: to, width: 104) }
+    fillGreen(Robot.head, top: 770, bottom: 520)
+    fillGreen(Robot.body, top: 500, bottom: 40)
 
-    // Snow cap with a jagged lower edge.
-    let snow = CGMutablePath()
-    snow.addLines(between: [
-        summit, CGPoint(x: 598, y: 655), CGPoint(x: 566, y: 672), CGPoint(x: 540, y: 640),
-        CGPoint(x: 505, y: 668), CGPoint(x: 472, y: 638), CGPoint(x: 448, y: 660), CGPoint(x: 426, y: 655),
-    ])
-    snow.closeSubpath()
-    context.addPath(snow)
-    context.setFillColor(color(0xF7F8FF))
-    context.fillPath()
-    // Shade on the snow's right half.
-    let snowShade = CGMutablePath()
-    snowShade.addLines(between: [summit, CGPoint(x: 598, y: 655), CGPoint(x: 566, y: 672), CGPoint(x: 540, y: 640), CGPoint(x: 512, y: 662)])
-    snowShade.closeSubpath()
-    context.addPath(snowShade)
-    context.setFillColor(color(0xC9CFF0))
-    context.fillPath()
+    // Face: huge eyes, raised brows, an "O" mouth.
+    let dark = color(0x0B1B2B)
+    for x: CGFloat in [420, 604] {
+        context.setFillColor(color(0xFFFFFF))
+        context.fillEllipse(in: CGRect(x: x - 56, y: 598, width: 112, height: 120))
+        context.setFillColor(dark)
+        context.fillEllipse(in: CGRect(x: x - 22, y: 650, width: 44, height: 48))   // pupils look up
+        context.setFillColor(color(0xFFFFFF))
+        context.fillEllipse(in: CGRect(x: x - 4, y: 682, width: 14, height: 14))    // catchlight
+    }
+    context.setStrokeColor(dark)
+    for x: CGFloat in [420, 604] {
+        context.setLineWidth(16)
+        context.setLineCap(.round)
+        context.addArc(center: CGPoint(x: x, y: 672), radius: 68, startAngle: .pi * 0.33, endAngle: .pi * 0.67, clockwise: false)
+        context.strokePath()
+    }
+    context.setFillColor(dark)
+    context.fillEllipse(in: CGRect(x: 512 - 34, y: 530, width: 68, height: 56))
+    context.restoreGState()
 
-    // Green foothills in front.
-    ridge(context, [CGPoint(x: 60, y: 330), CGPoint(x: 260, y: 400), CGPoint(x: 470, y: 300), CGPoint(x: 700, y: 380),
-                    CGPoint(x: 980, y: 290), CGPoint(x: 980, y: 60), CGPoint(x: 60, y: 60)],
-          top: color(0x3DDC84), bottom: color(0x0F7A4A), body: body)
-    ridge(context, [CGPoint(x: 60, y: 230), CGPoint(x: 330, y: 300), CGPoint(x: 620, y: 215), CGPoint(x: 980, y: 260),
-                    CGPoint(x: 980, y: 60), CGPoint(x: 60, y: 60)],
-          top: color(0x1FAF68), bottom: color(0x0A5234), body: body)
-
-    // Glass: a light sheen on the upper half and a thin rim.
-    linearGradient(context, [color(0xFFFFFF, 0.18), color(0xFFFFFF, 0)],
-                   from: CGPoint(x: 0, y: body.maxY), to: CGPoint(x: 0, y: body.midY))
+    // Glass: light sheen on the upper half and a thin rim.
+    context.drawLinearGradient(gradient([color(0xFFFFFF, 0.16), color(0xFFFFFF, 0)]),
+                               start: CGPoint(x: 0, y: frame.maxY), end: CGPoint(x: 0, y: frame.midY), options: [])
     context.restoreGState()
     context.addPath(shape)
-    context.setStrokeColor(color(0xFFFFFF, 0.22))
+    context.setStrokeColor(color(0xFFFFFF, 0.2))
     context.setLineWidth(3)
     context.strokePath()
 
-    let image = context.makeImage()!
-    return NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!
+    return png(context)
 }
 
+// MARK: - Menu bar icon
+
+/// Robot head with antennas and eye holes, black on clear: macOS tints template images.
+func drawMenuBarIcon(scale: Int) -> Data {
+    let points: CGFloat = 18
+    let pixels = Int(points) * scale
+    let context = CGContext(
+        data: nil, width: pixels, height: pixels, bitsPerComponent: 8, bytesPerRow: 0,
+        space: sRGB, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    )!
+    // Fit the head (x 262…762, y 520…860) into the square.
+    let unit = CGFloat(pixels) / 600
+    context.scaleBy(x: unit, y: unit)
+    context.translateBy(x: -212, y: -380)
+    context.setFillColor(color(0x000000))
+    context.setStrokeColor(color(0x000000))
+    context.addPath(Robot.head)
+    context.fillPath()
+    for (from, to) in Robot.antennas { capsule(context, from: from, to: to, width: 40) }
+    context.setBlendMode(.clear)
+    for x: CGFloat in [420, 604] { context.fillEllipse(in: CGRect(x: x - 44, y: 610, width: 88, height: 92)) }
+    return png(context)
+}
+
+func png(_ context: CGContext) -> Data {
+    NSBitmapImageRep(cgImage: context.makeImage()!).representation(using: .png, properties: [:])!
+}
+
+// MARK: - Output
+
+func write(_ data: Data, _ folder: String, _ file: String) throws {
+    try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+    try data.write(to: URL(filePath: folder).appending(path: file))
+}
+
+let appIcon = assets + "/AppIcon.appiconset"
 let sizes: [(name: String, points: Int, scale: Int)] = [
     ("16", 16, 1), ("16@2x", 16, 2), ("32", 32, 1), ("32@2x", 32, 2), ("128", 128, 1),
     ("128@2x", 128, 2), ("256", 256, 1), ("256@2x", 256, 2), ("512", 512, 1), ("512@2x", 512, 2),
 ]
-try FileManager.default.createDirectory(atPath: output, withIntermediateDirectories: true)
-var images: [String] = []
+var entries: [String] = []
 for entry in sizes {
     let file = "icon_\(entry.name).png"
-    try drawIcon(size: entry.points * entry.scale).write(to: URL(filePath: output).appending(path: file))
-    images.append("""
+    try write(drawAppIcon(size: entry.points * entry.scale), appIcon, file)
+    entries.append("""
         { "filename": "\(file)", "idiom": "mac", "scale": "\(entry.scale)x", "size": "\(entry.points)x\(entry.points)" }
     """)
 }
-let contents = "{\n  \"images\": [\n" + images.joined(separator: ",\n") + "\n  ],\n  \"info\": { \"author\": \"xcode\", \"version\": 1 }\n}\n"
-try contents.write(toFile: output + "/Contents.json", atomically: true, encoding: .utf8)
-print("Wrote \(sizes.count) icons to \(output)")
+try ("{\n  \"images\": [\n" + entries.joined(separator: ",\n") + "\n  ],\n  \"info\": { \"author\": \"xcode\", \"version\": 1 }\n}\n")
+    .write(toFile: appIcon + "/Contents.json", atomically: true, encoding: .utf8)
+
+let menuBar = assets + "/MenuBarIcon.imageset"
+try write(drawMenuBarIcon(scale: 1), menuBar, "menubar.png")
+try write(drawMenuBarIcon(scale: 2), menuBar, "menubar@2x.png")
+try """
+{
+  "images": [
+    { "filename": "menubar.png", "idiom": "universal", "scale": "1x" },
+    { "filename": "menubar@2x.png", "idiom": "universal", "scale": "2x" }
+  ],
+  "info": { "author": "xcode", "version": 1 },
+  "properties": { "template-rendering-intent": "template" }
+}
+""".write(toFile: menuBar + "/Contents.json", atomically: true, encoding: .utf8)
+print("Wrote app icon (\(sizes.count) sizes) and menu bar icon to \(assets)")

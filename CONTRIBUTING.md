@@ -9,7 +9,7 @@ Requirements: macOS 26, Xcode 26, an Android SDK (Android Studio or `brew instal
 ```sh
 brew install xcodegen
 xcodegen generate        # the .xcodeproj is generated, never committed
-open Oyama.xcodeproj
+open OhMyAndroid.xcodeproj
 ```
 
 Local builds are ad-hoc signed, so no Apple Developer account is needed.
@@ -38,9 +38,9 @@ Check your command on an emulator and, if it is not emulator-only, on a real dev
 ## Release (maintainers)
 
 ```sh
-xcrun notarytool store-credentials oyama --apple-id <email> --team-id <TEAM_ID>   # once
+xcrun notarytool store-credentials ohmyandroid --apple-id <email> --team-id <TEAM_ID>   # once
 TEAM_ID=<TEAM_ID> Scripts/release.sh
 ```
 
-Then attach `dist/Oyama-<version>.zip` to a GitHub release tagged `v<version>` and copy
-`dist/oyama.rb` to the Homebrew tap.
+Then attach `dist/OhMyAndroid-<version>.zip` to a GitHub release tagged `v<version>` and copy
+`dist/oh-my-android.rb` to the Homebrew tap.

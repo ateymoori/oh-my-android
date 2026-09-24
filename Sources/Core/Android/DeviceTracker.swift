@@ -3,6 +3,8 @@ import Foundation
 /// Emits a signal whenever the set of connected devices may have changed.
 protocol DeviceTracking: Sendable {
     func events() -> AsyncStream<Void>
+    /// Ends the stream and its process. Child processes outlive the app unless stopped explicitly.
+    func stop()
 }
 
 /// Push-based tracking through `adb track-devices`: adb keeps one connection open and writes a line
@@ -55,7 +57,7 @@ final class ADBDeviceTracker: DeviceTracking, @unchecked Sendable {
         try? process.run()
     }
 
-    private func stop() {
+    func stop() {
         let process = lock.withLock {
             stopped = true
             continuation = nil

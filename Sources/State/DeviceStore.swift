@@ -41,6 +41,13 @@ final class DeviceStore {
         }
     }
 
+    /// Called on quit: the `adb track-devices` child would otherwise keep running.
+    func stop() {
+        trackingTask?.cancel()
+        recoveryTask?.cancel()
+        tracker.stop()
+    }
+
     func refresh() async {
         do {
             let list = try await adb.devices()

@@ -19,5 +19,5 @@ jobs:
         run: xcodegen generate
       - name: Build (warnings are errors)
         run: |
-          xcodebuild -project Oyama.xcodeproj -scheme Oyama -configuration Release \
+          xcodebuild -project OhMyAndroid.xcodeproj -scheme OhMyAndroid -configuration Release \
             -derivedDataPath build/DerivedData CODE_SIGN_IDENTITY=- build

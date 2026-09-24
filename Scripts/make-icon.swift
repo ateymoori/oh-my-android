@@ -1,8 +1,8 @@
 #!/usr/bin/env swift
-// Draws the Oyama app icon with Core Graphics and writes every size the asset catalog needs.
+// Draws the Oh My Android app icon with Core Graphics and writes every size the asset catalog needs.
 // Usage: Scripts/make-icon.swift [output-folder]   (default: Sources/App/Assets.xcassets/AppIcon.appiconset)
 //
-// Motif: Mt. Ōyama at dawn. A sharp snow-capped peak against a sunrise sky, green foothills in front
+// Motif: a mountain at dawn. A sharp snow-capped peak against a sunrise sky, green foothills in front
 // (a nod to Android). Layout follows the macOS icon grid: 824 pt body inside a 1024 pt canvas.
 import AppKit
 import CoreGraphics
@@ -75,7 +75,7 @@ func drawIcon(size: Int) -> Data {
                     CGPoint(x: 980, y: 440), CGPoint(x: 980, y: 60), CGPoint(x: 60, y: 60)],
           top: color(0x7C6FB8), bottom: color(0x3E3A7A), body: body)
 
-    // Mt. Ōyama: a steep, symmetric pyramid.
+    // The peak: a steep, symmetric pyramid.
     let summit = CGPoint(x: 512, y: 780)
     let left = CGPoint(x: 150, y: 250), right = CGPoint(x: 874, y: 250)
     ridge(context, [left, summit, right, CGPoint(x: 874, y: 60), CGPoint(x: 150, y: 60)],

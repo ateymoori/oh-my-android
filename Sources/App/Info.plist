@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Oyama</string>
+	<string>Oh My Android</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

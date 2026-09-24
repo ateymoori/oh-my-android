@@ -63,7 +63,7 @@ struct ScreenRecordFeature: ToggleFeature {
         if on {
             let quality = RecordingQuality.current
             let resolution = try await Self.displayResolution(context)
-            let temporary = FileManager.default.temporaryDirectory.appending(path: "oyama-\(context.device.serial)-\(UUID().uuidString).webm")
+            let temporary = FileManager.default.temporaryDirectory.appending(path: "ohmyandroid-\(context.device.serial)-\(UUID().uuidString).webm")
             try await context.adb.console(context.device, ["screenrecord", "start"] + quality.arguments(for: resolution) + [temporary.path])
             await recorder.start(context.device.serial, file: temporary)
         } else {

@@ -2,7 +2,7 @@ import Foundation
 
 /// Runs every `BatchReadable` read in one `adb shell` call and maps the outputs back by feature id.
 struct BatchReader: Sendable {
-    private static let separator = "@@OYAMA@@"
+    private static let separator = "@@OHMYANDROID@@"
 
     func read(_ features: [any BatchReadable], _ context: DeviceContext) async -> [String: FeatureValue] {
         guard !features.isEmpty else { return [:] }

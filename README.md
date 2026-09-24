@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" alt="Oyama icon">
+  <img src="docs/icon.png" width="128" alt="Oh My Android icon">
 </p>
 
-<h1 align="center">Oyama</h1>
+<h1 align="center">Oh My Android</h1>
 
 <p align="center">
   <b>The control panel Google's Android emulator is missing.</b><br>
@@ -10,35 +10,33 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ateymoori/oyama/actions/workflows/build.yml"><img src="https://github.com/ateymoori/oyama/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml"><img src="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml/badge.svg" alt="Build"></a>
   <img src="https://img.shields.io/badge/macOS-26%2B-black" alt="macOS 26+">
   <img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" width="800" alt="Oyama docked beside the Android emulator">
+  <img src="docs/screenshot.png" width="800" alt="Oh My Android docked beside the Android emulator">
 </p>
 
-Oyama docks beside the emulator window and gives you dark mode, font and display scale, language,
+Oh My Android docks beside the emulator window and gives you dark mode, font and display scale, language,
 TalkBack, layout bounds, network conditions, GPS, battery, screenshots, screen recording, deep links
 and actions on the foreground app as icons. It works on emulators and on real devices (USB or Wi‑Fi adb).
 
 It is a wrapper, not an emulator. It drives the Android SDK already on your Mac. Nothing is bundled.
 
-*Named after Mt. Ōyama (大山), the mountain near Tokyo.*
-
 ## Install
 
 ```sh
-brew install --cask ateymoori/tap/oyama
+brew install --cask ateymoori/tap/oh-my-android
 ```
 
-Or download the notarized zip from [Releases](https://github.com/ateymoori/oyama/releases), unzip, and
-move `Oyama.app` to Applications.
+Or download the notarized zip from [Releases](https://github.com/ateymoori/oh-my-android/releases), unzip, and
+move `Oh My Android.app` to Applications.
 
 Requirements: macOS 26 or later and an Android SDK: [Android Studio](https://developer.android.com/studio),
-or `brew install --cask android-commandlinetools`. Oyama finds the SDK in `~/Library/Android/sdk`,
+or `brew install --cask android-commandlinetools`. Oh My Android finds the SDK in `~/Library/Android/sdk`,
 `ANDROID_HOME`, `ANDROID_SDK_ROOT` and the Homebrew folders. Apps opened from Finder do not see shell
 variables, so if the SDK is somewhere else, pick it in **Settings → Android SDK → Choose…**.
 
@@ -79,9 +77,9 @@ Nothing on the device is written.
 
 - No network access of its own. No analytics, no telemetry, no accounts.
 - Only talks to your local `adb`. Text you type is shell-quoted before it reaches the device.
-- Database copies from the Data Inspector are deleted on reload and when Oyama quits.
+- Database copies from the Data Inspector are deleted on reload and when Oh My Android quits.
 - Signed with a Developer ID, hardened runtime, notarized by Apple. Not sandboxed, because the
-  App Sandbox cannot start `adb`. That is also why Oyama is not in the Mac App Store.
+  App Sandbox cannot start `adb`. That is also why Oh My Android is not in the Mac App Store.
 
 See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
@@ -89,9 +87,9 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ```sh
 brew install xcodegen
-git clone https://github.com/ateymoori/oyama.git && cd oyama
+git clone https://github.com/ateymoori/oh-my-android.git && cd oh-my-android
 xcodegen generate
-open Oyama.xcodeproj
+open OhMyAndroid.xcodeproj
 ```
 
 Needs Xcode 26. Local builds are ad-hoc signed; no Apple Developer account needed.
@@ -132,7 +130,7 @@ Adding a feature is one struct and one line in `FeatureCatalog`. See [CONTRIBUTI
 Nothing polls adb. Device changes arrive from adb's own `track-devices` stream. Feature values are read
 once per device selection, after each action (that feature only), and when the pointer re-enters the
 panel after 5 s, as **one batched `adb shell` call** plus a few console reads for emulator-only
-features. While no device is ready, Oyama re-checks every 4 s until one is, then stops. Docking uses a
+features. While no device is ready, Oh My Android re-checks every 4 s until one is, then stops. Docking uses a
 1 Hz timer only while a `qemu-system` process exists and the panel is visible.
 
 ## Roadmap
@@ -143,4 +141,4 @@ features. While no device is ready, Oyama re-checks every 4 s until one is, then
 
 ## License
 
-[MIT](LICENSE) © 2026 Royan AB. Android is a trademark of Google LLC. Oyama is not affiliated with Google.
+[MIT](LICENSE) © 2026 Royan AB. Android is a trademark of Google LLC. Oh My Android is not affiliated with Google.

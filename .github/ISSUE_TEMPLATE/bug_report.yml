@@ -13,7 +13,7 @@ body:
     id: versions
     attributes:
       label: Versions
-      placeholder: Oyama 0.3.0, macOS 26.1, emulator API 36 / Pixel 8 Android 15
+      placeholder: Oh My Android 0.3.0, macOS 26.1, emulator API 36 / Pixel 8 Android 15
     validations:
       required: true
   - type: textarea

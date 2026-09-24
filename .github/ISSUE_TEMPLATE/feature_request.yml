@@ -1,5 +1,5 @@
 name: Feature request
-description: A test chore Oyama should turn into one click.
+description: A test chore Oh My Android should turn into one click.
 labels: [enhancement]
 body:
   - type: textarea
@@ -12,4 +12,4 @@ body:
   - type: textarea
     id: idea
     attributes:
-      label: What Oyama should do
+      label: What Oh My Android should do

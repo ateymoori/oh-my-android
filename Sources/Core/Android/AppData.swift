@@ -40,7 +40,7 @@ struct RunAsAppDataReader: AppDataReading {
     }
 
     func pullDatabase(of package: String, name: String, on device: Device, adb: ADBClient) async throws -> URL {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "oyama-db-\(UUID().uuidString)")
+        let directory = FileManager.default.temporaryDirectory.appending(path: "ohmyandroid-db-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let local = directory.appending(path: name)
         try await adb.execOut(device, "run-as \(package) cat databases/\(name.shellQuoted)").write(to: local)

@@ -13,10 +13,10 @@ enum EmulatorFeatures {
     )
     static let snapshotSave = ConsoleActionFeature(
         id: "emulator.snapshotSave", title: "Save state", symbol: "square.and.arrow.down.fill", category: .snapshots,
-        arguments: ["avd", "snapshot", "save", "oyama_clean"], message: "Snapshot saved"
+        arguments: ["avd", "snapshot", "save", "ohmyandroid_clean"], message: "Snapshot saved"
     )
     static let snapshotLoad = ConsoleActionFeature(
         id: "emulator.snapshotLoad", title: "Restore", symbol: "clock.arrow.circlepath", category: .snapshots,
-        arguments: ["avd", "snapshot", "load", "oyama_clean"], message: "Snapshot restored"
+        arguments: ["avd", "snapshot", "load", "ohmyandroid_clean"], message: "Snapshot restored"
     )
 }

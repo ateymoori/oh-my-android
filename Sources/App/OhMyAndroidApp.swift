@@ -1,11 +1,11 @@
 import SwiftUI
 
 @main
-struct OyamaApp: App {
+struct OhMyAndroidApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     var body: some Scene {
-        MenuBarExtra("Oyama", systemImage: "mountain.2.fill") {
+        MenuBarExtra("Oh My Android", systemImage: "mountain.2.fill") {
             MenuBarContent(delegate: delegate)
         }
         Settings {
@@ -34,7 +34,7 @@ private struct MenuBarContent: View {
             openSettings()
         }
         .keyboardShortcut(",")
-        Button("Quit Oyama") { NSApplication.shared.terminate(nil) }
+        Button("Quit Oh My Android") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 }

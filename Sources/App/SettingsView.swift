@@ -2,6 +2,25 @@ import ServiceManagement
 import SwiftUI
 
 struct SettingsView: View {
+    /// Shared with the menu, which opens the AI Agents tab directly.
+    static let tabKey = "settings.tab"
+    @AppStorage(SettingsView.tabKey) private var tab = "general"
+
+    var body: some View {
+        TabView(selection: $tab) {
+            GeneralSettingsView()
+                .tabItem { Label("General", systemImage: "gearshape") }
+                .tag("general")
+            AgentSettingsView()
+                .tabItem { Label("AI Agents", systemImage: "sparkles") }
+                .tag("agents")
+        }
+        .frame(width: 540)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+private struct GeneralSettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var chosenSDK: URL?
@@ -47,8 +66,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func chooseSDK() {

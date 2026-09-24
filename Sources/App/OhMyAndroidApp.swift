@@ -19,6 +19,8 @@ struct OhMyAndroidApp: App {
 private struct MenuBarContent: View {
     let delegate: AppDelegate
     @Environment(\.openSettings) private var openSettings
+    @AppStorage(AgentSettings.accessKey) private var agentAccess = AgentSettings.defaultAccess
+    @AppStorage(SettingsView.tabKey) private var settingsTab = "general"
 
     var body: some View {
         Button("Show/Hide Panel") { delegate.panel?.toggle() }
@@ -31,12 +33,24 @@ private struct MenuBarContent: View {
         Button("Restart adb") { Task { await delegate.model.devices?.restartServer() } }
             .disabled(delegate.model.devices == nil)
         Divider()
-        Button("Settings…") {
-            NSApp.activate()  // otherwise the window opens behind the frontmost app
-            openSettings()
+        Menu("AI Agents") {
+            Picker("Access", selection: $agentAccess) {
+                ForEach(AgentAccess.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.inline)
+            Divider()
+            Button("Set Up…") { showSettings(tab: "agents") }
         }
-        .keyboardShortcut(",")
+        Divider()
+        Button("Settings…") { showSettings(tab: "general") }
+            .keyboardShortcut(",")
         Button("Quit Oh My Android") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
+    }
+
+    private func showSettings(tab: String) {
+        settingsTab = tab
+        NSApp.activate()  // otherwise the window opens behind the frontmost app
+        openSettings()
     }
 }

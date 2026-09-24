@@ -13,7 +13,7 @@ final class DeviceStore {
     var selected: Device? {
         didSet { if let serial = selected?.serial { UserDefaults.standard.set(serial, forKey: Self.lastSerialKey) } }
     }
-    private static let lastSerialKey = "device.lastSerial"
+    private static let lastSerialKey = AgentSettings.panelDeviceKey
     private static let recoveryInterval: Duration = .seconds(4)
 
     private let adb: ADBClient

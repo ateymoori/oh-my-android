@@ -35,6 +35,20 @@ Local builds are ad-hoc signed, so no Apple Developer account is needed.
 
 Check your command on an emulator and, if it is not emulator-only, on a real device.
 
+## Add an MCP tool
+
+The MCP server (`Sources/MCP/`) is a separate command-line target built from `Core` and `Features`.
+
+1. Add a `Tool` to one of the groups in `Sources/MCP/Tools/`. Reuse a feature when one exists.
+2. Set `effect`: `.read` (Read only access), `.control` or `.destructive` (Full control). It also sets
+   the MCP annotations clients use to ask the user.
+3. Keep it cheap for the model: one-line description, positions in dp, compact text output.
+   Validate every argument that reaches a shell command.
+4. Run the protocol test: `Scripts/test-mcp.py <path>/ohmyandroid-mcp` (CI runs it too), then try the
+   tool on an emulator with `npx @modelcontextprotocol/inspector --cli <path>/ohmyandroid-mcp`.
+
+Never write to stdout in the server: stdout carries JSON-RPC only.
+
 ## Release (maintainers)
 
 ```sh

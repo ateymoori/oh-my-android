@@ -32,7 +32,7 @@ struct ScreenshotFeature: ActionFeature {
     let help = "Saves a PNG to Desktop/Android Captures and copies it to the clipboard."
 
     func perform(_ context: DeviceContext) async throws -> String? {
-        let data = try await context.adb.execOut(context.device, "screencap -p")
+        let data = try await context.adb.screenshot(context.device)
         let url = try CaptureLocation.file("Screenshot", "png")
         try data.write(to: url)
         await context.host.copyImage(data)

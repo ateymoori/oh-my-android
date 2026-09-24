@@ -15,6 +15,18 @@ protocol ADBClient: Sendable {
     func restartServer() async throws
 }
 
+extension ADBClient {
+    /// PNG of the screen. On devices with several displays (foldables) `screencap` prints a warning
+    /// before the image on the same stream; everything before the PNG signature is dropped.
+    func screenshot(_ device: Device) async throws -> Data {
+        let data = try await execOut(device, "screencap -p")
+        guard let start = data.firstRange(of: Data([0x89, 0x50, 0x4E, 0x47]))?.lowerBound else {
+            throw AppError("screencap returned no image.")
+        }
+        return Data(data[start...])
+    }
+}
+
 struct ConsoleError: LocalizedError {
     let output: String
     var errorDescription: String? { output.trimmed }

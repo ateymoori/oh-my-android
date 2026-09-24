@@ -34,6 +34,11 @@ ENTITLEMENTS=$(codesign -d --entitlements - "$BUILD/$BUNDLE" 2>/dev/null)
 SIGNATURE=$(codesign -dvv "$BUILD/$BUNDLE" 2>&1)
 [[ "$ENTITLEMENTS" != *get-task-allow* ]] || { echo "get-task-allow is set; notarization would reject the app." >&2; exit 1; }
 [[ "$SIGNATURE" == *$'\n'Timestamp=* ]] || { echo "Signature has no secure timestamp." >&2; exit 1; }
+MCP="$BUILD/$BUNDLE/Contents/MacOS/ohmyandroid-mcp"
+MCP_SIGNATURE=$(codesign -dvv "$MCP" 2>&1)
+[[ "$MCP_SIGNATURE" == *$'\n'Timestamp=* && "$MCP_SIGNATURE" == *runtime* ]] || { echo "MCP server lacks timestamp or hardened runtime." >&2; exit 1; }
+codesign --verify --deep --strict "$BUILD/$BUNDLE"
+Scripts/test-mcp.py "$MCP"
 
 rm -rf dist && mkdir -p dist
 cp -R "$BUILD/$BUNDLE" dist/
@@ -54,12 +59,13 @@ cask "oh-my-android" do
 
   url "https://github.com/$REPO/releases/download/v#{version}/$APP-#{version}.zip"
   name "Oh My Android"
-  desc "Floating control panel for the Android emulator and devices"
+  desc "Control panel and MCP server for the Android emulator and devices"
   homepage "https://github.com/$REPO"
 
   depends_on macos: :tahoe
 
   app "$BUNDLE"
+  binary "#{appdir}/$BUNDLE/Contents/MacOS/ohmyandroid-mcp"
 
   zap trash: "~/Library/Preferences/se.royan.ohmyandroid.plist"
 end

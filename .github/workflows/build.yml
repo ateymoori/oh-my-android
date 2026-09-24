@@ -21,3 +21,5 @@ jobs:
         run: |
           xcodebuild -project OhMyAndroid.xcodeproj -scheme OhMyAndroid -configuration Release \
             -derivedDataPath build/DerivedData CODE_SIGN_IDENTITY=- build
+      - name: Test MCP server protocol
+        run: Scripts/test-mcp.py "build/DerivedData/Build/Products/Release/Oh My Android.app/Contents/MacOS/ohmyandroid-mcp"

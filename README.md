@@ -7,12 +7,14 @@
 <p align="center">
   <b>The missing control panel for the Android Emulator on macOS.</b><br>
   Toggle dark mode, font size, language, TalkBack, network speed and GPS, inspect layouts in dp,<br>
-  and browse app data: one click each, no <code>adb</code> commands to remember.
+  and browse app data: one click each, no <code>adb</code> commands to remember.<br>
+  Built-in <b>MCP server</b>: let Claude, Cursor, Codex or Copilot see and drive your emulator.
 </p>
 
 <p align="center">
   <a href="https://github.com/ateymoori/oh-my-android/releases/latest"><img src="https://img.shields.io/github/v/release/ateymoori/oh-my-android?label=release&color=3DDC84" alt="Latest release"></a>
   <a href="#install"><img src="https://img.shields.io/badge/brew-oh--my--android-FBB040?logo=homebrew&logoColor=white" alt="Homebrew cask"></a>
+  <a href="#ai-agents-mcp"><img src="https://img.shields.io/badge/MCP-server-8A2BE2" alt="MCP server for AI agents"></a>
   <img src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple" alt="macOS 26 or later">
   <img src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white" alt="Swift 6">
   <a href="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml"><img src="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
@@ -25,6 +27,7 @@
   <a href="#features">Features</a> ·
   <a href="#no-more-adb-commands">adb cheat sheet</a> ·
   <a href="#layout-inspector">Layout Inspector</a> ·
+  <a href="#ai-agents-mcp">AI agents (MCP)</a> ·
   <a href="#faq">FAQ</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
@@ -48,6 +51,7 @@ real state of the device, and one click changes it.
 - 🔍 **Layout Inspector**: measure any view in dp, Figma-style, and overlay your design
 - ♿ **Accessibility audit**: TalkBack order, missing labels, small touch targets
 - 🗄️ **Data Inspector**: SharedPreferences and SQLite of your debug build
+- 🤖 **MCP server for AI agents**: your coding agent can see the screen, tap, switch settings and read logs
 - 🪶 **Native and light**: SwiftUI, Liquid Glass, event-driven (easy on the battery), no Electron, no telemetry
 - 🆓 **Free and open source** (MIT)
 
@@ -121,11 +125,61 @@ Browse the **SharedPreferences** (key, type, value) and **SQLite databases** (ta
 of any debuggable app, with search. It uses `adb shell run-as`, the same access Android Studio uses, so
 release builds stay closed. It is read-only: nothing on the device changes.
 
+## AI agents (MCP)
+
+Oh My Android includes an [MCP](https://modelcontextprotocol.io) server, so your AI coding agent can
+**see and drive the emulator**: screenshot, read the UI tree in dp, tap and type, switch to dark mode or
+RTL, read logcat and the app's database. The agent can build a screen, run it, look at the result, and
+fix it by itself.
+
+**Set up in one step:** menu bar icon → **AI Agents → Set Up…**, choose your agent, click **Copy**
+(or **Add to Cursor** / **Add to VS Code**). Or by hand:
+
+```sh
+claude mcp add --scope user oh-my-android -- ohmyandroid-mcp   # Claude Code
+codex mcp add oh-my-android -- ohmyandroid-mcp                 # Codex CLI
+```
+
+```json
+{ "mcpServers": { "oh-my-android": { "command": "/Applications/Oh My Android.app/Contents/MacOS/ohmyandroid-mcp" } } }
+```
+
+The JSON works in Cursor, Claude Desktop, Windsurf, Gemini CLI and other agents (VS Code uses `"servers"`).
+Homebrew puts `ohmyandroid-mcp` on your `PATH`. With the zip install, use the full path above.
+
+**You stay in control:** menu bar icon → **AI Agents** → *Off*, *Read only* or *Full control*. The server
+checks it on every call, so a change applies at once. Tools that can lose data are marked destructive,
+so your agent asks you first.
+
+| Group | Tools |
+|---|---|
+| 👀 See | `screenshot` (scaled to 1 px = 1 dp) · `get_ui` (compact UI tree with refs) · `accessibility_audit` |
+| 👆 Act | `tap` (by ref, text or x,y) · `swipe` · `type_text` · `press_key` |
+| 📱 Device | `list_devices` · `get_device_state` · `set_device_settings`: dark mode, font scale, display size, locale / RTL, orientation, TalkBack, animations, Wi‑Fi, airplane mode, network speed, GPS, battery |
+| 📦 Apps | `list_apps` · `open_app` (package or deep link, reports cold start time) · `manage_app` · `install_apk` · `logcat` |
+| 🗄️ Data | `read_preferences` · `query_database` (read-only SQL on a copy) |
+| 🧪 Emulator | `emulator_action`: fingerprint, incoming call, SMS, save / load snapshot |
+
+Ready-made prompts: `accessibility_review`, `ui_matrix` (dark mode, large fonts, RTL, pseudo-locales)
+and `debug_crash`.
+
+**Try asking your agent:**
+- *"Open the app, go to Settings, and check it in dark mode, font scale 2 and Arabic. Fix what breaks."*
+- *"The app crashes when I tap Save. Reproduce it, read the crash, and fix it."*
+- *"Audit the login screen for TalkBack and fix the problems in the code."*
+
+**Built for models:** every position is in dp, like your layout code. Output is compact text: a UI tree
+is about 10× smaller than the raw `uiautomator` XML, and all 18 tool definitions take about 3k tokens.
+The server supports MCP 2026-07-28 and the earlier versions (2024-11-05 to 2025-11-25) over stdio,
+has no dependencies, and needs no network.
+
 ## Privacy and security
 
 - 🔒 No network access of its own. **No analytics, no telemetry, no account.**
 - Talks only to the `adb` of your own Android SDK. Text you type is shell-quoted before it reaches the device.
 - Database copies from the Data Inspector are deleted when you reload and when the app quits.
+- The MCP server runs only when your AI agent starts it, and only with the access you allow. What it
+  reads (screen, UI, logs, app data) goes to your agent, and from there to the agent's model provider.
 - Signed with a Developer ID, hardened runtime, notarized by Apple.
 
 Found a vulnerability? See [SECURITY.md](SECURITY.md).
@@ -157,6 +211,14 @@ network speed, screen recording) need an emulator.
 
 Yes. The Layout Inspector and the accessibility audit read the Compose semantics tree through
 `uiautomator`, the same as for Views.
+</details>
+
+<details>
+<summary><b>Which AI agents work with it?</b></summary>
+
+Any agent that supports MCP over stdio: Claude Code, Claude Desktop, Codex CLI, Cursor, VS Code
+(GitHub Copilot), Windsurf, Gemini CLI, JetBrains AI, Zed and more. The app does not have to be open;
+the agent starts the server when it needs it.
 </details>
 
 <details>
@@ -200,6 +262,7 @@ Sources/
     Android/  AndroidSDK, ADBClient, DeviceTracker (adb track-devices), UI hierarchy, app data
     SQLite/, Imaging/
   Features/   one small type per capability, registered in FeatureCatalog (Foundation only)
+  MCP/        ohmyandroid-mcp: stdio MCP server built on Core and Features, shipped inside the app
   State/      AppModel (composition root), DeviceStore, FeatureStore, inspector stores
   Windows/    FloatingPanel, emulator window docking, tool windows
   UI/         SwiftUI; FeatureCell renders any feature from its protocol
@@ -230,6 +293,7 @@ The app and menu bar icons are drawn in code: `Scripts/make-icon.swift`.
 - Compare mode: two devices side by side, mirrored input, pixel diff
 - The emulator screen embedded in the panel window
 - DataStore (`.preferences_pb`) support in the Data Inspector
+- MCP: start and stop emulators, record the screen
 
 Have an idea? [Open a feature request](https://github.com/ateymoori/oh-my-android/issues/new/choose).
 Adding a feature is one small Swift struct: see [CONTRIBUTING.md](CONTRIBUTING.md).

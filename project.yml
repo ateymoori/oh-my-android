@@ -14,8 +14,8 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
-    MARKETING_VERSION: "0.3.0"
-    CURRENT_PROJECT_VERSION: "3"
+    MARKETING_VERSION: "0.4.0"
+    CURRENT_PROJECT_VERSION: "4"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
     DEAD_CODE_STRIPPING: YES
   configs:
@@ -29,6 +29,14 @@ targets:
     platform: macOS
     sources:
       - path: Sources
+        excludes: ["MCP/**"]
+    dependencies:
+      # The MCP server ships inside the app: Contents/MacOS/ohmyandroid-mcp, signed with it.
+      - target: ohmyandroid-mcp
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
     info:
       path: Sources/App/Info.plist
       properties:
@@ -56,3 +64,22 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_EMIT_LOC_STRINGS: NO
         COMBINE_HIDPI_IMAGES: YES
+
+  # MCP server for AI agents. Shares Core and Features with the app; Imaging needs AppKit and stays out.
+  ohmyandroid-mcp:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/Core
+        excludes: ["Imaging/**"]
+      - path: Sources/Features
+      - path: Sources/MCP
+    settings:
+      base:
+        PRODUCT_NAME: ohmyandroid-mcp
+        PRODUCT_MODULE_NAME: OhMyAndroidMCP
+        PRODUCT_BUNDLE_IDENTIFIER: se.royan.ohmyandroid.mcp
+        # Embedded Info.plist: gives the binary a stable signing identifier and a version.
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        SKIP_INSTALL: YES

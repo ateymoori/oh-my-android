@@ -88,7 +88,7 @@ final class LayoutInspectorStore {
             sampler = await Task.detached { PixelSampler(png: fresh.image) }.value
             screenImage = NSImage(data: fresh.image)
             snapshot = fresh
-            accessibilityItems = AccessibilityTraversal.items(in: fresh)
+            accessibilityItems = AccessibilityTraversal.items(in: fresh.hierarchy)
             selected = nil
             hovered = nil
             if let pending = pendingOverlay { pendingOverlay = nil; loadOverlay(pending) }

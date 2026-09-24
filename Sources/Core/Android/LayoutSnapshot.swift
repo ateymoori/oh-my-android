@@ -50,28 +50,46 @@ struct UINode: Identifiable, Hashable, Sendable {
     }
 }
 
-/// Screenshot plus hierarchy taken at the same moment, with the density needed to speak in dp.
-struct LayoutSnapshot: Sendable {
-    let image: Data
+/// View hierarchy with the density needed to speak in dp.
+struct UIHierarchy: Sendable {
     let root: UINode
-    let screen: CGSize
     let density: Double
 
+    var screen: CGSize { root.bounds.size }
     func dp(_ pixels: Double) -> Double { pixels * 160 / density }
+    func pixels(_ dp: Double) -> Double { dp * density / 160 }
+}
+
+/// Screenshot plus hierarchy taken at the same moment.
+struct LayoutSnapshot: Sendable {
+    let image: Data
+    let hierarchy: UIHierarchy
+
+    var root: UINode { hierarchy.root }
+    var screen: CGSize { hierarchy.screen }
+    var density: Double { hierarchy.density }
+    func dp(_ pixels: Double) -> Double { hierarchy.dp(pixels) }
 }
 
 protocol LayoutSnapshotReading: Sendable {
     func snapshot(on device: Device, adb: ADBClient) async throws -> LayoutSnapshot
+    /// Hierarchy only: no screenshot to transfer.
+    func hierarchy(on device: Device, adb: ADBClient) async throws -> UIHierarchy
 }
 
 struct UIAutomatorSnapshotReader: LayoutSnapshotReading {
     func snapshot(on device: Device, adb: ADBClient) async throws -> LayoutSnapshot {
-        async let image = adb.execOut(device, "screencap -p")
+        async let image = adb.screenshot(device)
+        let hierarchy = try await hierarchy(on: device, adb: adb)
+        return LayoutSnapshot(image: try await image, hierarchy: hierarchy)
+    }
+
+    func hierarchy(on device: Device, adb: ADBClient) async throws -> UIHierarchy {
         async let density = adb.shell(device, "wm density")
         let xml = try await dumpHierarchy(on: device, adb: adb)
         guard let root = HierarchyXMLParser.parse(xml) else { throw AppError("Could not read the view hierarchy.") }
         let dpi = WindowManagerOutput.effectiveDensity(try await density).map(Double.init) ?? 160
-        return LayoutSnapshot(image: try await image, root: root, screen: root.bounds.size, density: dpi)
+        return UIHierarchy(root: root, density: dpi)
     }
 
     /// uiautomator refuses while the screen animates; one retry covers the usual case.

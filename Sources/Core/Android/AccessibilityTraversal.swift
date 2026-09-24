@@ -19,36 +19,38 @@ struct AccessibilityItem: Identifiable, Hashable, Sendable {
 enum AccessibilityTraversal {
     static let minimumTargetDp = 48.0
 
-    static func items(in snapshot: LayoutSnapshot) -> [AccessibilityItem] {
+    static func items(in hierarchy: UIHierarchy) -> [AccessibilityItem] {
         var items: [AccessibilityItem] = []
-        visit(snapshot.root, snapshot: snapshot, into: &items)
+        visit(hierarchy.root, hierarchy: hierarchy, viewport: hierarchy.root.bounds, into: &items)
         return items
     }
 
-    private static func visit(_ node: UINode, snapshot: LayoutSnapshot, into items: inout [AccessibilityItem]) {
+    /// `viewport` is the nearest scrolling container: nodes cut by its edges are only partly on screen.
+    private static func visit(_ node: UINode, hierarchy: UIHierarchy, viewport: CGRect, into items: inout [AccessibilityItem]) {
         guard node.bounds.width > 0, node.bounds.height > 0 else { return }
         let actionable = node.flags.clickable || node.flags.focusable || node.flags.checkable || node.flags.longClickable
         if actionable {
-            items.append(item(for: node, mergedText: mergedText(node), snapshot: snapshot, order: items.count + 1))
+            items.append(item(for: node, mergedText: mergedText(node), hierarchy: hierarchy, viewport: viewport, order: items.count + 1))
             return
         }
         if !node.text.isEmpty || !node.contentDescription.isEmpty {
-            items.append(item(for: node, mergedText: ownText(node), snapshot: snapshot, order: items.count + 1))
+            items.append(item(for: node, mergedText: ownText(node), hierarchy: hierarchy, viewport: viewport, order: items.count + 1))
         }
-        for child in spatiallyOrdered(node.children, snapshot: snapshot) { visit(child, snapshot: snapshot, into: &items) }
+        let inner = node.flags.scrollable ? node.bounds : viewport
+        for child in spatiallyOrdered(node.children, hierarchy: hierarchy) { visit(child, hierarchy: hierarchy, viewport: inner, into: &items) }
     }
 
     /// TalkBack orders siblings by position: rows top to bottom, then left to right within a row.
     /// Two siblings share a row when their vertical centres are within half a row (16 dp).
-    private static func spatiallyOrdered(_ nodes: [UINode], snapshot: LayoutSnapshot) -> [UINode] {
-        let rowTolerance = 16 * snapshot.density / 160
+    private static func spatiallyOrdered(_ nodes: [UINode], hierarchy: UIHierarchy) -> [UINode] {
+        let rowTolerance = 16 * hierarchy.density / 160
         return nodes.sorted { a, b in
             if abs(a.bounds.midY - b.bounds.midY) > rowTolerance { return a.bounds.midY < b.bounds.midY }
             return a.bounds.minX < b.bounds.minX
         }
     }
 
-    private static func item(for node: UINode, mergedText: String, snapshot: LayoutSnapshot, order: Int) -> AccessibilityItem {
+    private static func item(for node: UINode, mergedText: String, hierarchy: UIHierarchy, viewport: CGRect, order: Int) -> AccessibilityItem {
         let role = role(of: node)
         var parts: [String] = []
         if !mergedText.isEmpty { parts.append(mergedText) }
@@ -64,8 +66,12 @@ enum AccessibilityTraversal {
         if node.flags.naf { issues.append("NAF: actionable without accessible text") }
         if role == "Image", node.contentDescription.isEmpty, node.text.isEmpty, !actionable { issues.append("Image without description (fine only if decorative)") }
         if node.flags.clickable {
-            let w = snapshot.dp(node.bounds.width), h = snapshot.dp(node.bounds.height)
-            if w < minimumTargetDp || h < minimumTargetDp {
+            let w = hierarchy.dp(node.bounds.width), h = hierarchy.dp(node.bounds.height)
+            // uiautomator clips bounds to the visible part: a row cut by the list edge only looks small.
+            let r = node.bounds
+            let cutVertically = r.minY <= viewport.minY || r.maxY >= viewport.maxY
+            let cutHorizontally = r.minX <= viewport.minX || r.maxX >= viewport.maxX
+            if (w < minimumTargetDp && !cutHorizontally) || (h < minimumTargetDp && !cutVertically) {
                 issues.append("Touch target \(Int(w.rounded())) × \(Int(h.rounded())) dp, minimum 48 × 48")
             }
         }

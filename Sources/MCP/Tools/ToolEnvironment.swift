@@ -51,12 +51,12 @@ final class ToolEnvironment: Sendable {
                 device = selected
             }
         }
-        if let problem = device.state.problem { throw AppError("\(device.serial) is \(problem).") }
+        if let problem = device.problem { throw AppError("\(device.serial) is \(problem).") }
         return DeviceContext(device: device, adb: adb, foreground: foreground, host: HostActions())
     }
 
     private static func describe(_ devices: [Device]) -> String {
-        devices.isEmpty ? "none" : devices.map { "\($0.serial) (\($0.state.problem ?? "ready"))" }.joined(separator: ", ")
+        devices.isEmpty ? "none" : devices.map { "\($0.serial) (\($0.problem ?? "ready"))" }.joined(separator: ", ")
     }
 }
 

@@ -7,7 +7,7 @@ struct DeviceInfoView: View {
     private var store: DeviceInfoStore { model.deviceInfo }
 
     var body: some View {
-        if let info = store.info {
+        if let info = store.info(for: model.devices?.selected) {
             VStack(alignment: .leading, spacing: 6) {
                 Button {
                     withAnimation(.snappy(duration: 0.25)) { store.isExpanded.toggle() }
@@ -39,6 +39,8 @@ struct DeviceInfoView: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Device details")
             .glassEffect(.regular, in: .rect(cornerRadius: 12))
         }
     }

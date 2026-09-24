@@ -51,7 +51,10 @@ struct AndroidDebugBridge: ADBClient {
             let serial = parts[0]
             let model = parts.first { $0.hasPrefix("model:") }.map { String($0.dropFirst(6)).replacingOccurrences(of: "_", with: " ") } ?? serial
             var device = Device(serial: serial, model: model, state: Device.State(rawValue: parts[1]) ?? .other)
-            if device.isEmulator, device.isReady {
+            if device.isOnline {
+                device.isBooted = (try? await shell(device, "getprop sys.boot_completed").trimmed) == "1"
+            }
+            if device.isEmulator, device.isOnline {
                 device.avdName = try? await console(device, ["avd", "name"]).split(whereSeparator: \.isNewline).first.map(String.init)?.trimmed
             }
             devices.append(device)

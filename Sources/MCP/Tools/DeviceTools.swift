@@ -16,11 +16,11 @@ enum DeviceTools {
         let panel = AgentSettings.panelDevice
         var lines = devices.map { device in
             let kind = device.isEmulator ? "emulator" : "phone"
-            let state = device.state.problem ?? "ready"
+            let state = device.problem ?? "ready"
             return "\(device.serial)  \(device.displayName)  \(kind)  \(state)\(device.serial == panel ? "  (selected in panel)" : "")"
         }
         if lines.isEmpty { lines.append("No device connected.") }
-        if let avds = try? await call.environment.availableAVDs(), !avds.isEmpty {
+        if let sdk = call.environment.sdk, case let avds = await EmulatorLauncher.avds(sdk), !avds.isEmpty {
             lines.append("AVDs: " + avds.joined(separator: ", ") + " (start with: emulator -avd <name>)")
         }
         return .text(lines.joined(separator: "\n"))
@@ -202,16 +202,5 @@ enum DeviceSettings {
             fatalError("FeatureCatalog has no toggle \(id)")
         }
         return feature
-    }
-}
-
-extension ToolEnvironment {
-    /// Emulator images installed in the SDK.
-    func availableAVDs() async throws -> [String] {
-        guard let sdk else { return [] }
-        let emulator = sdk.root.appending(path: "emulator/emulator")
-        guard FileManager.default.isExecutableFile(atPath: emulator.path) else { return [] }
-        let output = try await ProcessShellRunner(timeout: .seconds(10)).run(emulator, arguments: ["-list-avds"]).stdout
-        return output.split(whereSeparator: \.isNewline).map(String.init).filter { !$0.isEmpty && !$0.hasPrefix("INFO") }
     }
 }

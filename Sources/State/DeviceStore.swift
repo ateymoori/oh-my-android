@@ -76,7 +76,8 @@ final class DeviceStore {
     }
 
     private func updateRecovery() {
-        let needsRecovery = selected == nil
+        // Also while a device boots: adb reports no event when boot completes.
+        let needsRecovery = selected == nil || devices.contains { $0.isOnline && !$0.isBooted }
         if needsRecovery, recoveryTask == nil {
             recoveryTask = Task { [weak self] in
                 while !Task.isCancelled {

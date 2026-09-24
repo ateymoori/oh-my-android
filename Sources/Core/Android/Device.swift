@@ -20,10 +20,15 @@ struct Device: Identifiable, Hashable, Sendable {
     let model: String
     var state: State = .device
     var avdName: String?
+    /// adb accepts commands before Android has finished booting; settings and packages are not there yet.
+    var isBooted = true
 
     var id: String { serial }
     var isEmulator: Bool { serial.hasPrefix("emulator-") }
-    var isReady: Bool { state == .device }
+    var isOnline: Bool { state == .device }
+    var isReady: Bool { isOnline && isBooted }
+    /// Why the device cannot take commands yet, or nil when it can.
+    var problem: String? { state.problem ?? (isBooted ? nil : "starting") }
     var displayName: String { avdName?.replacingOccurrences(of: "_", with: " ") ?? model }
     var symbol: String { isEmulator ? "macbook.and.iphone" : "iphone" }
     /// Console port of an emulator serial such as "emulator-5554".

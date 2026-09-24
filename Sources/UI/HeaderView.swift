@@ -13,6 +13,7 @@ struct HeaderView: View {
                 Image(systemName: model.isPinned ? "pin.fill" : "pin.slash")
                     .foregroundStyle(model.isPinned ? Theme.accent : .secondary)
                     .contentTransition(.symbolEffect(.replace))
+                    .frame(width: Theme.headerControlHeight, height: Theme.headerControlHeight)
             }
             .buttonStyle(.glass)
             .accessibilityLabel(model.isPinned ? "Unpin panel" : "Pin panel")
@@ -22,13 +23,27 @@ struct HeaderView: View {
 
     private var devicePicker: some View {
         Menu {
+            if model.devices?.devices.isEmpty ?? true {
+                Text("No devices connected")
+            }
             ForEach(model.devices?.devices ?? []) { device in
                 Button {
                     model.devices?.selected = device
                 } label: {
-                    Label(device.state.problem.map { "\(device.displayName) — \($0)" } ?? device.displayName, systemImage: device.symbol)
+                    Label(device.problem.map { "\(device.displayName) — \($0)" } ?? device.displayName, systemImage: device.symbol)
                 }
                 .disabled(!device.isReady)
+            }
+            if let emulators = model.emulators, !emulators.avds.isEmpty {
+                Divider()
+                Menu("Start Emulator") {
+                    ForEach(emulators.avds, id: \.self) { avd in
+                        Button(EmulatorLauncher.displayName(avd)) {
+                            emulators.start(avd) { message in model.features.show(Toast(kind: .error, message: message)) }
+                        }
+                    }
+                }
+                .disabled(emulators.starting != nil)
             }
             Divider()
             Button("Restart adb") { Task { await model.devices?.restartServer() } }
@@ -36,20 +51,21 @@ struct HeaderView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: model.devices?.selected?.symbol ?? "iphone.slash")
-                Text(headerTitle).lineLimit(1)
+                Text(headerTitle).lineLimit(1).truncationMode(.middle)
             }
             .font(.callout.weight(.medium))
+            .foregroundStyle(model.devices?.selected == nil ? .secondary : .primary)
+            .frame(height: Theme.headerControlHeight)
         }
         .menuStyle(.button)
         .buttonStyle(.glass)
         .frame(maxWidth: .infinity, alignment: .leading)
         .help("Target device")
+        .accessibilityLabel("Device: \(headerTitle)")
     }
 
-    /// Selected device, or the reason nothing is selected.
+    /// Selected device, else a device that is not ready yet (the content explains why), else none.
     private var headerTitle: String {
-        if let device = model.devices?.selected { return device.displayName }
-        if let stuck = model.devices?.devices.first, let problem = stuck.state.problem { return "\(stuck.displayName) — \(problem)" }
-        return "No device"
+        (model.devices?.selected ?? model.devices?.devices.first)?.displayName ?? "No Device"
     }
 }

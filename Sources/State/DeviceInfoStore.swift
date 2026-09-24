@@ -5,7 +5,7 @@ import Observation
 @MainActor
 @Observable
 final class DeviceInfoStore {
-    private(set) var info: DeviceInfo?
+    private var info: DeviceInfo?
     var isExpanded: Bool = UserDefaults.standard.bool(forKey: DeviceInfoStore.expandedKey) {
         didSet { UserDefaults.standard.set(isExpanded, forKey: Self.expandedKey) }
     }
@@ -15,6 +15,12 @@ final class DeviceInfoStore {
     private var loadedAt: Date = .distantPast
     private static let expandedKey = "panel.deviceInfoExpanded"
     private static let staleAfter: TimeInterval = 5
+
+    /// Facts only for the device they were read from; never the last device's after it disconnects.
+    func info(for device: Device?) -> DeviceInfo? {
+        guard let device, device.serial == loadedFor else { return nil }
+        return info
+    }
 
     init(reader: DeviceInfoReading) {
         self.reader = reader

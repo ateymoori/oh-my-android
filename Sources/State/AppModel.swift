@@ -10,6 +10,7 @@ final class AppModel {
     let devices: DeviceStore?
     let features = FeatureStore()
     let deviceInfo = DeviceInfoStore(reader: DeviceInfoReader())
+    let emulators: EmulatorStore?
 
     private let foregroundReader: ForegroundAppReading = ForegroundAppReader()
     /// Filled by the app delegate once windows exist.
@@ -32,12 +33,39 @@ final class AppModel {
         let bridge = sdk.map { AndroidDebugBridge(sdk: $0, runner: ProcessShellRunner()) }
         adb = bridge
         devices = bridge.map { DeviceStore(adb: $0, tracker: ADBDeviceTracker(adb: $0.sdk.adb)) }
+        emulators = sdk.map(EmulatorStore.init)
         if let bridge { devices?.start { await bridge.startServer() } }
     }
 
     var context: DeviceContext? {
         guard let adb, let device = devices?.selected else { return nil }
         return DeviceContext(device: device, adb: adb, foreground: foregroundReader, host: host)
+    }
+
+    /// What the panel shows. Every situation without a usable device has one case, so the UI covers
+    /// them all and none can show stale device data.
+    enum PanelState {
+        case sdkMissing
+        case adbFailed(String)
+        case starting(avd: String)
+        case booting(Device)
+        case unauthorized(Device)
+        case offline(Device)
+        case noDevice
+        case ready(DeviceContext)
+    }
+
+    var panelState: PanelState {
+        guard let devices else { return .sdkMissing }
+        if let context { return .ready(context) }
+        if let avd = emulators?.starting { return .starting(avd: avd) }
+        if let error = devices.lastError { return .adbFailed(error) }
+        if let device = devices.devices.first(where: { $0.state == .unauthorized }) { return .unauthorized(device) }
+        if let device = devices.devices.first(where: { !$0.isReady }) {
+            // Starting: an emulator is offline until adbd runs; any device is online before boot completes.
+            return device.isOnline || device.isEmulator ? .booting(device) : .offline(device)
+        }
+        return .noDevice
     }
 
     /// Full read of the selected device: feature values and device facts.

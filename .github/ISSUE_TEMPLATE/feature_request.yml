@@ -1,0 +1,15 @@
+name: Feature request
+description: A test chore Oyama should turn into one click.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you do today
+      description: The manual steps or adb command you run now.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What Oyama should do

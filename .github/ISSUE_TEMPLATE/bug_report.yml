@@ -1,0 +1,24 @@
+name: Bug report
+description: Something does not work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: Oyama 0.3.0, macOS 26.1, emulator API 36 / Pixel 8 Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: adb
+    attributes:
+      label: adb output
+      description: Output of `adb devices -l` and of the failing command, if you know it.
+      render: text

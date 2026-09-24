@@ -57,7 +57,7 @@ cask "oh-my-android" do
   desc "Floating control panel for the Android emulator and devices"
   homepage "https://github.com/$REPO"
 
-  depends_on macos: ">= :tahoe"
+  depends_on macos: :tahoe
 
   app "$BUNDLE"
 

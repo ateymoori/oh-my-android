@@ -14,9 +14,14 @@
   <a href="https://github.com/ateymoori/oh-my-android/releases/latest"><img src="https://img.shields.io/github/v/release/ateymoori/oh-my-android?label=release&color=3DDC84" alt="Latest release"></a>
   <a href="#install"><img src="https://img.shields.io/badge/brew-oh--my--android-FBB040?logo=homebrew&logoColor=white" alt="Homebrew cask"></a>
   <a href="#ai-agents-mcp"><img src="https://img.shields.io/badge/MCP-server-8A2BE2" alt="MCP server for AI agents"></a>
+  <a href="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml"><img src="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
   <img src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple" alt="macOS 26 or later">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <a href="https://github.com/ateymoori/oh-my-android/stargazers"><img src="https://img.shields.io/github/stars/ateymoori/oh-my-android?style=social" alt="GitHub stars"></a>
+</p>
+
+<p align="center">
+  <b>Install:</b> <code>brew install --cask ateymoori/tap/oh-my-android</code> · free and open source
 </p>
 
 <p align="center">
@@ -38,14 +43,11 @@
 </table>
 
 <p align="center">
-  <b>Install:</b> <code>brew install --cask ateymoori/tap/oh-my-android</code> · free and open source
-</p>
-
-<p align="center">
   <a href="#features">Features</a> ·
   <a href="#no-more-adb-commands">adb cheat sheet</a> ·
   <a href="#layout-inspector">Layout Inspector</a> ·
   <a href="#ai-agents-mcp">AI agents (MCP)</a> ·
+  <a href="#troubleshooting">Troubleshooting</a> ·
   <a href="#faq">FAQ</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
@@ -84,9 +86,22 @@ unzip it, and move **Oh My Android.app** to Applications. The app is signed and 
 menu, read what's new, and install in one click. The app never updates without asking. It checks once a
 day; turn it off in **Settings → Updates**. `brew upgrade --cask oh-my-android` works too.
 
-**Requirements:** macOS 26 Tahoe or later, and the Android SDK from
+**Requirements:** macOS 26 Tahoe or later, Apple silicon, and the Android SDK from
 [Android Studio](https://developer.android.com/studio) (or `brew install --cask android-commandlinetools`).
 The app finds the SDK by itself. If yours is in an unusual folder, pick it in **Settings → Android SDK**.
+
+### Use it from Claude Code, Codex or Cursor
+
+```sh
+brew install --cask ateymoori/tap/oh-my-android
+
+claude mcp add --scope user oh-my-android -- ohmyandroid-mcp   # Claude Code
+codex mcp add oh-my-android -- ohmyandroid-mcp                 # Codex CLI
+gemini mcp add --scope user oh-my-android ohmyandroid-mcp      # Gemini CLI
+```
+
+For Cursor and VS Code, use the install buttons in [AI agents (MCP)](#ai-agents-mcp).
+Then start an emulator and ask your agent: *"Take a screenshot of the emulator and check this screen in dark mode."*
 
 ## Features
 
@@ -160,6 +175,13 @@ fix it by itself.
   <img src="docs/ai-agents.jpg" width="500" alt="AI Agents settings: Off, Read only or Full control, and the setup command for each agent">
 </p>
 
+<p align="center">
+  <a href="https://cursor.com/en/install-mcp?name=oh-my-android&config=eyJjb21tYW5kIjoiL29wdC9ob21lYnJldy9iaW4vb2hteWFuZHJvaWQtbWNwIn0="><img src="https://cursor.com/deeplink/mcp-install-dark.svg" height="32" alt="Add Oh My Android MCP server to Cursor"></a>
+  <a href="https://insiders.vscode.dev/redirect/mcp/install?name=oh-my-android&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22%2Fopt%2Fhomebrew%2Fbin%2Fohmyandroid-mcp%22%7D"><img src="https://img.shields.io/badge/VS_Code-Install_MCP_server-0098FF?logo=visualstudiocode&logoColor=white" height="32" alt="Install Oh My Android MCP server in VS Code"></a>
+</p>
+
+The buttons use the Homebrew path `/opt/homebrew/bin/ohmyandroid-mcp`. With the zip install, use the menu bar setup below.
+
 **Set up in one step:** menu bar icon → **AI Agents → Set Up…**, choose your agent, click **Copy**
 (or **Add to Cursor** / **Add to VS Code**). Or by hand:
 
@@ -222,6 +244,17 @@ has no dependencies, and needs no network.
 
 Found a vulnerability? See [SECURITY.md](SECURITY.md).
 
+## Troubleshooting
+
+- **adb not found:** pick your SDK in **Settings → Android SDK**, or set `ANDROID_HOME`.
+- **The agent says there is no device:** start an emulator or connect a phone, then ask the agent to run `list_devices`.
+- **Agent cannot start `ohmyandroid-mcp` (zip install):** only Homebrew puts it on your `PATH`. Use the full path
+  `/Applications/Oh My Android.app/Contents/MacOS/ohmyandroid-mcp`.
+- **Homebrew says the tap is not trusted:** Homebrew 6 and later ask you to trust third-party taps. The full
+  `brew install --cask ateymoori/tap/oh-my-android` trusts only this cask. For short names, run
+  `brew trust --cask ateymoori/tap/oh-my-android` first.
+- **The agent gets "Access is Off":** menu bar icon → **AI Agents** → *Read only* or *Full control*.
+
 ## FAQ
 
 <details>
@@ -257,6 +290,12 @@ Yes. The Layout Inspector and the accessibility audit read the Compose semantics
 Any agent that supports MCP over stdio: Claude Code, Claude Desktop, Codex CLI, Cursor, VS Code
 (GitHub Copilot), Windsurf, Gemini CLI, JetBrains AI, Zed and more. The app does not have to be open;
 the agent starts the server when it needs it.
+</details>
+
+<details>
+<summary><b>Is there an npx or uvx package?</b></summary>
+
+No. The server is one native binary with no runtime; Homebrew puts `ohmyandroid-mcp` on your `PATH`.
 </details>
 
 <details>

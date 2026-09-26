@@ -113,6 +113,7 @@ mkdir -p mcpb/server
 cp "$BUNDLE/Contents/MacOS/ohmyandroid-mcp" mcpb/server/
 cp ../mcpb/icon.png mcpb/
 jq --arg v "$VERSION" '.version = $v' ../mcpb/manifest.json > mcpb/manifest.json
+cp mcpb/manifest.json ../mcpb/manifest.json   # keep the repo copy on the released version; commit it with server.json
 (cd mcpb && zip -qrX "../$MCPB" manifest.json icon.png server)
 rm -rf mcpb
 MCPB_SHA=$(shasum -a 256 "$MCPB" | cut -d' ' -f1)

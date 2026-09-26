@@ -14,6 +14,9 @@ struct PanelRootView: View {
         .padding(Theme.panelPadding)
         .frame(width: Theme.panelSize.width, height: Theme.panelSize.height, alignment: .top)
         .glassEffect(.regular, in: .rect(cornerRadius: Theme.panelCorner))
+        // Borderless panel with SwiftUI content: drag anywhere that is not a control to move it.
+        .gesture(WindowDragGesture())
+        .allowsWindowActivationEvents(true)
         .overlay {
             RoundedRectangle(cornerRadius: Theme.panelCorner)
                 .strokeBorder(Theme.accent, lineWidth: isDropTargeted ? 3 : 0)

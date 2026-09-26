@@ -10,6 +10,8 @@ final class PanelController {
     private let model: AppModel
     private let tracker = EmulatorWindowTracker()
     private var dockTimer: Timer?
+    /// True while the panel moves itself, so a move by the user can be told apart.
+    private var isDocking = false
     /// Lives for the whole app session, so observers are never removed.
     private var observers: [NSObjectProtocol] = []
 
@@ -21,6 +23,20 @@ final class PanelController {
         placeInitially()
         observeEmulatorProcesses()
         observePinning()
+        observeUserMoves()
+    }
+
+    /// A drag by the user wins over docking: turn docking off, else the timer pulls the panel back.
+    private func observeUserMoves() {
+        observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { [weak self] _ in
+            // Posted synchronously inside setFrameOrigin, so isDocking is still set for our own moves.
+            MainActor.assumeIsolated {
+                guard let self, !self.isDocking, self.dockTimer != nil else { return }
+                self.model.dockToEmulator = false
+                self.updateDockTimer()
+                self.model.features.show(Toast(kind: .info, message: "Docking off. Turn it on in Settings."))
+            }
+        })
     }
 
     // MARK: - Pinning
@@ -88,7 +104,10 @@ final class PanelController {
         x = min(x, visible.maxX - Theme.panelSize.width)
         let y = max(emulator.maxY - Theme.panelSize.height, visible.minY)
         let origin = NSPoint(x: x, y: y)
-        if panel.frame.origin != origin { panel.setFrameOrigin(origin) }
+        guard panel.frame.origin != origin else { return }
+        isDocking = true
+        panel.setFrameOrigin(origin)
+        isDocking = false
     }
 
     private func placeInitially() {

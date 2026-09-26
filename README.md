@@ -1,14 +1,13 @@
 <p align="center">
-  <img src="docs/icon.png" width="140" alt="Oh My Android app icon: a surprised Android robot">
+  <img src="docs/icon.png" width="112" alt="Oh My Android app icon: a surprised Android robot">
 </p>
 
 <h1 align="center">Oh My Android</h1>
 
 <p align="center">
   <b>The missing control panel for the Android Emulator on macOS.</b><br>
-  Toggle dark mode, font size, language, TalkBack, network speed and GPS, inspect layouts in dp,<br>
-  and browse app data: one click each, no <code>adb</code> commands to remember.<br>
-  Built-in <b>MCP server</b>: let Claude, Cursor, Codex or Copilot see and drive your emulator.
+  Dark mode, font size, RTL language, TalkBack, network speed, GPS and more: one click each, no <code>adb</code> commands.<br>
+  Layout Inspector in dp, accessibility audit, and an <b>MCP server</b> so AI agents can drive your emulator.
 </p>
 
 <p align="center">
@@ -16,24 +15,39 @@
   <a href="#install"><img src="https://img.shields.io/badge/brew-oh--my--android-FBB040?logo=homebrew&logoColor=white" alt="Homebrew cask"></a>
   <a href="#ai-agents-mcp"><img src="https://img.shields.io/badge/MCP-server-8A2BE2" alt="MCP server for AI agents"></a>
   <img src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple" alt="macOS 26 or later">
-  <img src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white" alt="Swift 6">
-  <a href="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml"><img src="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <a href="https://github.com/ateymoori/oh-my-android/stargazers"><img src="https://img.shields.io/github/stars/ateymoori/oh-my-android?style=social" alt="GitHub stars"></a>
 </p>
 
 <p align="center">
-  <a href="#install">Install</a> ·
+  <img src="docs/demo.gif" width="760" alt="Demo: the Oh My Android panel beside the Android Emulator switches dark mode, font size and language to Arabic RTL, then simulates an incoming SMS and call">
+  <br><sub>Dark mode, font size, Arabic RTL, incoming SMS and call. Each is one click.</sub>
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center"><a href="#features"><img src="docs/panel.jpg" height="340" alt="The Oh My Android control panel with appearance, app, capture and network actions"></a></td>
+    <td align="center"><a href="#layout-inspector"><img src="docs/layout-inspector-talkback.jpg" height="340" alt="Layout Inspector with dp measurements and the TalkBack order audit"></a></td>
+    <td align="center"><a href="#ai-agents-mcp"><img src="docs/ai-agents.jpg" height="340" alt="AI Agents settings: access level and one-step MCP setup for Claude Code, Codex, Cursor and VS Code"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Control panel</b></td>
+    <td align="center"><b>Layout Inspector + TalkBack audit</b></td>
+    <td align="center"><b>MCP server for AI agents</b></td>
+  </tr>
+</table>
+
+<p align="center">
+  <b>Install:</b> <code>brew install --cask ateymoori/tap/oh-my-android</code> · free and open source
+</p>
+
+<p align="center">
   <a href="#features">Features</a> ·
   <a href="#no-more-adb-commands">adb cheat sheet</a> ·
   <a href="#layout-inspector">Layout Inspector</a> ·
   <a href="#ai-agents-mcp">AI agents (MCP)</a> ·
   <a href="#faq">FAQ</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
-</p>
-
-<p align="center">
-  <img src="docs/screenshot.png" width="820" alt="Oh My Android control panel docked beside the Android Emulator on macOS">
 </p>
 
 ## Why Oh My Android?
@@ -107,6 +121,10 @@ Every icon replaces a command you would otherwise type or search for:
 
 Freeze the screen and measure it like in Figma. Works with **Jetpack Compose** and classic **Views**.
 
+<p align="center">
+  <img src="docs/layout-inspector.gif" width="820" alt="Layout Inspector: hover views to see their size in dp and the distances between them">
+</p>
+
 - Hover any element to see its size in **dp**. Click one, hover another, and see the distance between them
   (gaps between siblings, paddings inside a parent).
 - **8 dp grid**, **color picker** (hex, ⇧⌘C to copy), and an estimated text size in **sp**.
@@ -131,6 +149,10 @@ Oh My Android includes an [MCP](https://modelcontextprotocol.io) server, so your
 **see and drive the emulator**: screenshot, read the UI tree in dp, tap and type, switch to dark mode or
 RTL, read logcat and the app's database. The agent can build a screen, run it, look at the result, and
 fix it by itself.
+
+<p align="center">
+  <img src="docs/ai-agents.jpg" width="500" alt="AI Agents settings: Off, Read only or Full control, and the setup command for each agent">
+</p>
 
 **Set up in one step:** menu bar icon → **AI Agents → Set Up…**, choose your agent, click **Copy**
 (or **Add to Cursor** / **Add to VS Code**). Or by hand:

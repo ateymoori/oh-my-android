@@ -19,7 +19,7 @@ Local builds are ad-hoc signed, so no Apple Developer account is needed.
 - Swift 6 language mode, strict concurrency, **zero warnings** (warnings are errors).
 - Dependency direction: `UI → State → Features → Core`. Features import Foundation only;
   anything with AppKit (pickers, clipboard, Finder) goes through `HostActions`.
-- Nothing polls. Device changes come from `adb track-devices`; feature values are read on demand.
+- Nothing polls. Device changes come from the adb server's `track-devices` socket (no child process that could outlive the app); feature values are read on demand.
 - Every `Process` goes through `ShellRunning`: non-blocking, with a watchdog timeout.
 - Text from the user is quoted with `String.shellQuoted` before it reaches `adb shell`.
 - Destructive actions set `isDestructive = true`; the panel then asks before running them.

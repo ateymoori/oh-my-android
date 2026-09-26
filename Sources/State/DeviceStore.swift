@@ -41,7 +41,7 @@ final class DeviceStore {
         }
     }
 
-    /// Called on quit: the `adb track-devices` child would otherwise keep running.
+    /// Called on quit: closes the connection to the adb server.
     func stop() {
         trackingTask?.cancel()
         recoveryTask?.cancel()

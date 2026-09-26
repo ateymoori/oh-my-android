@@ -106,6 +106,21 @@ cask "oh-my-android" do
   ]
 end
 EOF
+# MCP bundle (.mcpb): the signed, notarized server alone, for Claude Desktop and the MCP Registry.
+# server.json (repo root) points the registry at it; commit it after the release.
+MCPB=oh-my-android-$VERSION.mcpb
+mkdir -p mcpb/server
+cp "$BUNDLE/Contents/MacOS/ohmyandroid-mcp" mcpb/server/
+cp ../mcpb/icon.png mcpb/
+jq --arg v "$VERSION" '.version = $v' ../mcpb/manifest.json > mcpb/manifest.json
+(cd mcpb && zip -qrX "../$MCPB" manifest.json icon.png server)
+rm -rf mcpb
+MCPB_SHA=$(shasum -a 256 "$MCPB" | cut -d' ' -f1)
+jq --arg v "$VERSION" --arg url "https://github.com/$REPO/releases/download/v$VERSION/$MCPB" --arg sha "$MCPB_SHA" \
+  '.version = $v | .packages[0].identifier = $url | .packages[0].fileSha256 = $sha' ../server.json > server.json
+cp server.json ../server.json
+
 echo "Ready: dist/$ZIP (sha256 $SHA)"
 echo "Cask:  dist/oh-my-android.rb"
 echo "Feed:  dist/appcast.xml (upload with the zip)"
+echo "MCP:   dist/$MCPB (upload with the zip), then commit server.json and run: mcp-publisher publish"

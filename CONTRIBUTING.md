@@ -56,5 +56,15 @@ xcrun notarytool store-credentials ohmyandroid --apple-id <email> --team-id <TEA
 TEAM_ID=<TEAM_ID> Scripts/release.sh
 ```
 
-Then attach `dist/OhMyAndroid-<version>.zip` to a GitHub release tagged `v<version>` and copy
-`dist/oh-my-android.rb` to the Homebrew tap.
+Then attach `dist/OhMyAndroid-<version>.zip`, `dist/appcast.xml` and `dist/oh-my-android-<version>.mcpb`
+to a GitHub release tagged `v<version>`, and copy `dist/oh-my-android.rb` to the Homebrew tap.
+
+The script also updates `server.json` (version, `.mcpb` URL and sha256). Commit it, then publish to the
+[MCP Registry](https://registry.modelcontextprotocol.io) (`brew install mcp-publisher`):
+
+```sh
+mcp-publisher login github   # once
+mcp-publisher publish
+```
+
+`mcpb/manifest.json` is the Claude Desktop extension manifest; its version is set by the script.

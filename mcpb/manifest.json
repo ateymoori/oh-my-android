@@ -1,0 +1,119 @@
+{
+  "manifest_version": "0.3",
+  "name": "oh-my-android",
+  "display_name": "Oh My Android",
+  "version": "0.4.3",
+  "description": "Let your AI agent see and drive the Android Emulator and phones: screenshots, UI tree in dp, tap, dark mode, RTL, logcat.",
+  "long_description": "The MCP server of [Oh My Android](https://github.com/ateymoori/oh-my-android). Your agent can screenshot the screen (1 px = 1 dp), read a compact UI tree, tap and type, switch dark mode, font scale, locale / RTL and TalkBack, read logcat, SharedPreferences and SQLite, and run accessibility audits. Needs adb (Android Studio or the Android command-line tools) and macOS 26 or later. Install the Oh My Android app to choose the access level (Off, Read only, Full control); without it the server gives full control.",
+  "author": {
+    "name": "Amir Teymoori",
+    "url": "https://github.com/ateymoori"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ateymoori/oh-my-android.git"
+  },
+  "homepage": "https://github.com/ateymoori/oh-my-android",
+  "documentation": "https://github.com/ateymoori/oh-my-android#ai-agents-mcp",
+  "support": "https://github.com/ateymoori/oh-my-android/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/ohmyandroid-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/ohmyandroid-mcp",
+      "args": []
+    }
+  },
+  "tools": [
+    {
+      "name": "list_devices",
+      "description": "Connected emulators and phones, and the emulators that can be started."
+    },
+    {
+      "name": "get_device_state",
+      "description": "Device facts, app on screen, and current test settings."
+    },
+    {
+      "name": "set_device_settings",
+      "description": "Dark mode, font scale, display size, locale / RTL, TalkBack, network, GPS, battery."
+    },
+    {
+      "name": "screenshot",
+      "description": "Screenshot scaled so 1 px = 1 dp."
+    },
+    {
+      "name": "get_ui",
+      "description": "Compact UI tree with refs, positions in dp."
+    },
+    {
+      "name": "accessibility_audit",
+      "description": "TalkBack order, missing labels, small touch targets."
+    },
+    {
+      "name": "tap",
+      "description": "Tap by ref, visible text, or x,y in dp."
+    },
+    {
+      "name": "swipe",
+      "description": "Swipe or scroll in a direction."
+    },
+    {
+      "name": "type_text",
+      "description": "Type into the focused field."
+    },
+    {
+      "name": "press_key",
+      "description": "Press a system key."
+    },
+    {
+      "name": "list_apps",
+      "description": "Installed third-party apps."
+    },
+    {
+      "name": "open_app",
+      "description": "Launch an app or open a deep link; reports start time."
+    },
+    {
+      "name": "manage_app",
+      "description": "Force-stop, clear data, permissions, uninstall."
+    },
+    {
+      "name": "install_apk",
+      "description": "Install or update an APK from this Mac."
+    },
+    {
+      "name": "logcat",
+      "description": "Recent log lines and crash stack traces."
+    },
+    {
+      "name": "read_preferences",
+      "description": "SharedPreferences of a debuggable app."
+    },
+    {
+      "name": "query_database",
+      "description": "Read-only SQL on a copy of a debuggable app's database."
+    },
+    {
+      "name": "emulator_action",
+      "description": "Emulator only: fingerprint, call, SMS, snapshots."
+    }
+  ],
+  "keywords": [
+    "android",
+    "emulator",
+    "adb",
+    "mobile",
+    "testing",
+    "accessibility",
+    "talkback",
+    "ui"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": [
+      "darwin"
+    ]
+  },
+  "prompts_generated": false
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ateymoori/oh-my-android",
+  "title": "Oh My Android",
+  "description": "AI agents see and drive the Android Emulator: screenshots, UI in dp, tap, dark mode, RTL, logcat.",
+  "version": "0.4.3",
+  "websiteUrl": "https://github.com/ateymoori/oh-my-android",
+  "repository": {
+    "url": "https://github.com/ateymoori/oh-my-android",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/ateymoori/oh-my-android/releases/download/v0.4.3/oh-my-android-0.4.3.mcpb",
+      "fileSha256": "1907afe5a0626e35a4941ea0e0de689fd106c3c2da325d9166851f9ab5065499",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

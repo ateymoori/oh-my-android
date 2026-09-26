@@ -9,8 +9,9 @@ enum Catalog {
 
     static let instructions = """
     Oh My Android drives Android emulators and phones over adb. All positions and sizes are dp, like layout code; \
-    screenshots are scaled to 1 px = 1 dp. Work in a loop: get_ui (cheap text) or screenshot → act (tap, type_text, \
-    swipe, press_key) → get_ui to check. Refs from get_ui stay valid until the screen changes. \
+    screenshots are scaled to 1 px = 1 dp. get_ui is cheap text; a screenshot costs more tokens and shows visuals. \
+    Input tools (tap, type_text, swipe, press_key) return a confirmation, not the new screen. \
+    Refs from get_ui stay valid until the screen changes. \
     With several devices, pass device (see list_devices). Data tools need a debuggable build.
     """
 
@@ -20,14 +21,11 @@ enum Catalog {
             title: "Accessibility review",
             description: "Audit the current screen with TalkBack order, labels and touch targets, then propose code fixes.",
             text: """
-            Review the accessibility of the screen now shown on the Android device.
-            1. Call accessibility_audit with issues_only=false and take a screenshot.
-            2. For each problem, find the view or composable in this codebase (use the resource id or text) and propose a fix: \
-            contentDescription or semantics label, 48x48 dp touch targets (minimumInteractiveComponentSize), merged semantics, \
-            decorative images with null descriptions.
-            3. Check that the reading order makes sense and point out steps that are out of order.
-            4. Call set_device_settings with font_scale=2, check the screen for clipped or overlapping text with get_ui and a \
-            screenshot, then restore font_scale to its first value.
+            Review the accessibility of the screen now shown on the Android device and propose code fixes in this codebase \
+            (the resource id or text finds the view or composable). Cover TalkBack reading order, missing labels \
+            (contentDescription or semantics), touch targets under 48x48 dp (minimumInteractiveComponentSize), merged \
+            semantics, and decorative images that need a null description. Also check the screen at font_scale=2 for \
+            clipped or overlapping text, then set font_scale back to its first value.
             Report a short table: problem, element, fix, file.
             """
         ),
@@ -36,14 +34,13 @@ enum Catalog {
             title: "UI test matrix",
             description: "Check the current screen in dark mode, large fonts, display size, RTL and pseudo-locales, then restore.",
             text: """
-            Test the screen now shown on the Android device under stress settings.
-            1. Call get_device_state and remember the settings so you can restore them.
-            2. For each case, call set_device_settings, then screenshot, and get_ui when the image is unclear:
-               dark_mode=true; font_scale=1.3; font_scale=2; display_scale=1.35; locale=ar-EG (RTL); locale=en-XA (long text).
-               Reset the previous case before the next one.
-            3. Look for clipped or truncated text, overlap, wrong colors or contrast in dark mode, mirrored layout errors in RTL, \
-            hard-coded strings that did not change with the locale.
-            4. Restore all settings to their first values.
+            Test the screen now shown on the Android device under stress settings, one case at a time with the previous \
+            case reset: dark_mode=true; font_scale=1.3; font_scale=2; display_scale=1.35; locale=ar-EG (RTL); \
+            locale=en-XA (long text).
+            Look for clipped or truncated text, overlap, wrong colors or contrast in dark mode, mirrored layout errors in RTL, \
+            and hard-coded strings that did not change with the locale.
+            The device must end with the settings it started with: read them with get_device_state before the first change \
+            and restore them after the last case.
             Report each problem with the case, the element, and a proposed code fix.
             """
         ),
@@ -54,11 +51,10 @@ enum Catalog {
             arguments: [PromptArgument(name: "package", description: "App package. Default: the app on screen.")],
             text: """
             Find and fix the latest crash of the Android app{package}.
-            1. Call logcat with crash=true and lines=200. If it is empty, call logcat{packageArgument} with level=E.
-            2. Find the root cause in the stack trace (the last "Caused by") and the first frame in this app's code.
-            3. Open that code in this codebase and explain why it fails.
-            4. Propose a fix. When the steps to reproduce are clear, reproduce with open_app (restart=true) and the input tools, \
-            and confirm the fix after the user rebuilds.
+            The crash buffer (logcat crash=true lines=200) has the stack trace; if it is empty, try logcat{packageArgument} \
+            with level=E. The root cause is usually the last "Caused by", and the first frame in this app's code shows where \
+            to look. Explain why that code fails and propose a fix. When the steps to reproduce are clear, reproduce the crash \
+            with open_app (restart=true) and the input tools, and confirm the fix after the user rebuilds.
             """
         ),
     ]

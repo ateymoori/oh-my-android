@@ -1,12 +1,15 @@
 #!/bin/zsh
 # Builds a Release app, signs it with your Developer ID, notarizes, staples, zips, and writes the
-# Homebrew cask with the zip's sha256.
+# Homebrew cask with the zip's sha256 and the signed Sparkle appcast.
 #
 # One-time setup (asks for an app-specific password from appleid.apple.com):
 #   xcrun notarytool store-credentials ohmyandroid --apple-id <apple-id-email> --team-id <TEAM_ID>
+# Sparkle's private EdDSA key must be in the login Keychain (generate_keys; its public key is SUPublicEDKey).
 # Usage:
-#   TEAM_ID=<your team id> Scripts/release.sh [--skip-notarize]
+#   TEAM_ID=<your team id> [NOTES=notes.md] Scripts/release.sh [--skip-notarize]
+# NOTES: Markdown release notes, shown in the update window (and usable for `gh release create --notes-file`).
 set -euo pipefail
+NOTES=${NOTES:+${NOTES:A}}   # absolute, before the cd
 cd "$(dirname "$0")/.."
 APP=OhMyAndroid              # project, scheme, zip name
 BUNDLE="Oh My Android.app"
@@ -14,6 +17,8 @@ TEAM_ID=${TEAM_ID:?Set TEAM_ID to your Apple Developer team id}
 NOTARY_PROFILE=${NOTARY_PROFILE:-ohmyandroid}
 REPO=${REPO:-ateymoori/oh-my-android}
 BUILD=build/DerivedData/Build/Products/Release
+SPARKLE_BIN=build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin
+[[ -z "$NOTES" || -f "$NOTES" ]] || { echo "No release notes at $NOTES." >&2; exit 1; }
 
 xcodegen generate >/dev/null
 rm -rf "$BUILD/$BUNDLE"   # never ship a stale app from an earlier build
@@ -24,6 +29,19 @@ if ! xcodebuild -project $APP.xcodeproj -scheme $APP -configuration Release -der
   echo "Build failed. Full log: build/release.log" >&2
   exit 1
 fi
+
+# Xcode signs the embedded Sparkle.framework but not its helpers, which ship ad-hoc signed.
+# Sign them inside-out with the Developer ID, then re-seal the app (entitlements kept).
+IDENTITY=$(security find-identity -v -p codesigning | awk -v team="($TEAM_ID)" '/Developer ID Application/ && index($0, team) { print $2; exit }')
+[[ -n "$IDENTITY" ]] || { echo "No Developer ID Application identity for team $TEAM_ID." >&2; exit 1; }
+SPARKLE="$BUILD/$BUNDLE/Contents/Frameworks/Sparkle.framework/Versions/B"
+SIGN=(codesign --force --timestamp --options runtime --sign "$IDENTITY")
+"${SIGN[@]}" "$SPARKLE/XPCServices/Installer.xpc"
+"${SIGN[@]}" --preserve-metadata=entitlements "$SPARKLE/XPCServices/Downloader.xpc"
+"${SIGN[@]}" "$SPARKLE/Autoupdate"
+"${SIGN[@]}" "$SPARKLE/Updater.app"
+"${SIGN[@]}" "$BUILD/$BUNDLE/Contents/Frameworks/Sparkle.framework"
+"${SIGN[@]}" --preserve-metadata=entitlements,requirements,flags "$BUILD/$BUNDLE"
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$BUILD/$BUNDLE/Contents/Info.plist")
 ZIP=$APP-$VERSION.zip
@@ -51,6 +69,18 @@ if [[ "${1:-}" != "--skip-notarize" ]]; then
   spctl -a -vv "$BUNDLE"
 fi
 
+# Sparkle feed: one item, EdDSA-signed zip and feed. Uploaded with each release as appcast.xml;
+# the app reads it from releases/latest/download.
+mkdir updates && cp "$ZIP" updates/
+[[ -z "$NOTES" ]] || cp "$NOTES" "updates/${ZIP%.zip}.md"
+"../$SPARKLE_BIN/generate_appcast" --maximum-versions 1 --embed-release-notes \
+  --download-url-prefix "https://github.com/$REPO/releases/download/v$VERSION/" \
+  --full-release-notes-url "https://github.com/$REPO/releases/tag/v$VERSION" \
+  --link "https://github.com/$REPO" -o appcast.xml updates
+"../$SPARKLE_BIN/sign_update" --verify appcast.xml
+grep -q "releases/download/v$VERSION/$ZIP" appcast.xml || { echo "appcast.xml does not point at $ZIP." >&2; exit 1; }
+rm -rf updates
+
 SHA=$(shasum -a 256 "$ZIP" | cut -d' ' -f1)
 cat > oh-my-android.rb <<EOF
 cask "oh-my-android" do
@@ -64,11 +94,18 @@ cask "oh-my-android" do
 
   depends_on macos: :tahoe
 
+  auto_updates true
+
   app "$BUNDLE"
   binary "#{appdir}/$BUNDLE/Contents/MacOS/ohmyandroid-mcp"
 
-  zap trash: "~/Library/Preferences/se.royan.ohmyandroid.plist"
+  zap trash: [
+    "~/Library/Caches/se.royan.ohmyandroid",
+    "~/Library/HTTPStorages/se.royan.ohmyandroid",
+    "~/Library/Preferences/se.royan.ohmyandroid.plist",
+  ]
 end
 EOF
 echo "Ready: dist/$ZIP (sha256 $SHA)"
 echo "Cask:  dist/oh-my-android.rb"
+echo "Feed:  dist/appcast.xml (upload with the zip)"

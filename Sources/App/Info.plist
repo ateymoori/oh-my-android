@@ -44,5 +44,19 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Royan AB. MIT License.</string>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/ateymoori/oh-my-android/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>YdWTclvQkY33zzPWcTTdG/2ehEminXDGmLn8ruNslis=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel()
+    let updates = UpdateController()
     private(set) var panel: PanelController?
     private var inspector: InspectorWindowController?
     private var layoutInspector: LayoutInspectorWindowController?

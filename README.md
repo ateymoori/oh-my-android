@@ -78,6 +78,10 @@ brew install --cask ateymoori/tap/oh-my-android
 Or download the zip from the [latest release](https://github.com/ateymoori/oh-my-android/releases/latest),
 unzip it, and move **Oh My Android.app** to Applications. The app is signed and notarized by Apple.
 
+**Updates:** when a new version is out, a dot shows on the menu bar icon. Click **Update to …** in the
+menu, read what's new, and install in one click. The app never updates without asking. It checks once a
+day; turn it off in **Settings → Updates**. `brew upgrade --cask oh-my-android` works too.
+
 **Requirements:** macOS 26 Tahoe or later, and the Android SDK from
 [Android Studio](https://developer.android.com/studio) (or `brew install --cask android-commandlinetools`).
 The app finds the SDK by itself. If yours is in an unusual folder, pick it in **Settings → Android SDK**.
@@ -197,7 +201,11 @@ has no dependencies, and needs no network.
 
 ## Privacy and security
 
-- 🔒 No network access of its own. **No analytics, no telemetry, no account.**
+- 🔒 **No analytics, no telemetry, no account.** The only network request of its own is the update
+  check: once a day it reads a small feed from this repo's GitHub releases. It sends nothing about you or
+  your devices. Turn it off in **Settings → Updates**.
+- Updates ([Sparkle](https://sparkle-project.org)) install only when you choose, and only if they are
+  signed with this project's EdDSA key and the same Developer ID.
 - Talks only to the `adb` of your own Android SDK. Text you type is shell-quoted before it reaches the device.
 - Database copies from the Data Inspector are deleted when you reload and when the app quits.
 - The MCP server runs only when your AI agent starts it, and only with the access you allow. What it

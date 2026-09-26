@@ -61,6 +61,7 @@ private struct GeneralSettingsView: View {
                     }
                 }
             }
+            UpdateSettingsSection()
             if let error {
                 Text(error).font(.caption).foregroundStyle(.red)
             }
@@ -98,6 +99,26 @@ private struct GeneralSettingsView: View {
         configuration.createsNewApplicationInstance = true
         NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
             Task { @MainActor in NSApp.terminate(nil) }
+        }
+    }
+}
+
+private struct UpdateSettingsSection: View {
+    @Environment(UpdateController.self) private var updates
+    private let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+
+    var body: some View {
+        @Bindable var updates = updates
+        Section {
+            Toggle("Check for updates automatically", isOn: $updates.automaticallyChecks)
+            LabeledContent("Version \(version)") {
+                Button(updates.pendingVersion.map { "Update to \($0)…" } ?? "Check Now") { updates.checkForUpdates() }
+            }
+        } header: {
+            Text("Updates")
+        } footer: {
+            Text("Once a day, one small request to GitHub. Updates are signed and notarized, and install only when you choose.")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 }

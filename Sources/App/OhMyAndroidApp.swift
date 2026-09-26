@@ -8,10 +8,10 @@ struct OhMyAndroidApp: App {
         MenuBarExtra {
             MenuBarContent(delegate: delegate)
         } label: {
-            Image("MenuBarIcon").accessibilityLabel("Oh My Android")
+            Image(nsImage: MenuBarIcon.image(badged: delegate.updates.pendingVersion != nil))
         }
         Settings {
-            SettingsView().environment(delegate.model)
+            SettingsView().environment(delegate.model).environment(delegate.updates)
         }
     }
 }
@@ -23,6 +23,10 @@ private struct MenuBarContent: View {
     @AppStorage(SettingsView.tabKey) private var settingsTab = "general"
 
     var body: some View {
+        if let version = delegate.updates.pendingVersion {
+            Button("Update to \(version)…") { delegate.updates.checkForUpdates() }
+            Divider()
+        }
         Button("Show/Hide Panel") { delegate.panel?.toggle() }
         Divider()
         Button("Layout Inspector…") { delegate.openLayoutInspector() }
@@ -42,6 +46,7 @@ private struct MenuBarContent: View {
             Button("Set Up…") { showSettings(tab: "agents") }
         }
         Divider()
+        Button("Check for Updates…") { delegate.updates.checkForUpdates() }
         Button("Settings…") { showSettings(tab: "general") }
             .keyboardShortcut(",")
         Button("Quit Oh My Android") { NSApplication.shared.terminate(nil) }

@@ -14,8 +14,8 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
-    MARKETING_VERSION: "0.4.2"
-    CURRENT_PROJECT_VERSION: "6"
+    MARKETING_VERSION: "0.4.3"
+    CURRENT_PROJECT_VERSION: "7"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
     DEAD_CODE_STRIPPING: YES
   configs:
@@ -23,6 +23,11 @@ settings:
       # Notarization rejects get-task-allow and signatures without a secure timestamp.
       CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
       OTHER_CODE_SIGN_FLAGS: "--timestamp"
+packages:
+  # In-app updates. Pinned: bump on purpose, after reading its release notes.
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
 targets:
   OhMyAndroid:
     type: application
@@ -37,6 +42,7 @@ targets:
         codeSign: true
         copy:
           destination: executables
+      - package: Sparkle
     info:
       path: Sources/App/Info.plist
       properties:
@@ -47,6 +53,14 @@ targets:
         LSMinimumSystemVersion: "26.0"
         NSHumanReadableCopyright: "© 2026 Royan AB. MIT License."
         NSHighResolutionCapable: true
+        # Sparkle: the feed is an asset of the latest GitHub release; updates must carry this EdDSA key's signature.
+        SUFeedURL: https://github.com/ateymoori/oh-my-android/releases/latest/download/appcast.xml
+        SUPublicEDKey: YdWTclvQkY33zzPWcTTdG/2ehEminXDGmLn8ruNslis=
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        SUAutomaticallyUpdate: false
+        SUVerifyUpdateBeforeExtraction: true
+        SURequireSignedFeed: true
         CFBundleDocumentTypes:
           - CFBundleTypeName: Design image
             CFBundleTypeRole: Viewer

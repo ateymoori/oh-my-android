@@ -10,8 +10,12 @@ Do not open a public issue.
 
 ## What Oh My Android does and does not do
 
-- No network access of its own. No analytics, no telemetry, no update checks.
-- Talks only to the local `adb` from your Android SDK. Nothing is bundled.
+- No analytics, no telemetry. The only network request of its own is the update check
+  ([Sparkle](https://sparkle-project.org)): once a day, a GET of `appcast.xml` from this repository's
+  latest GitHub release. It can be turned off in Settings → Updates.
+- Updates install only when the user chooses. Sparkle rejects an update unless the zip and the feed
+  are signed with this project's EdDSA key (public key in Info.plist) and the app has the same Developer ID.
+- Talks only to the local `adb` from your Android SDK. The only bundled code is Sparkle.
 - The Data Inspector reads app storage through `run-as`, which Android allows only for
   `debuggable=true` builds. It never writes to the device. Pulled database copies live in the
   macOS temporary folder and are deleted when you reload and when Oh My Android quits.

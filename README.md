@@ -69,6 +69,8 @@ real state of the device, and one click changes it.
 - 🪶 **Native and light**: SwiftUI, Liquid Glass, event-driven (easy on the battery), no Electron, no telemetry
 - 🆓 **Free and open source** (MIT)
 
+How it compares with Android Studio, scrcpy and other tools: [docs/COMPARISON.md](docs/COMPARISON.md).
+
 ## Install
 
 ```sh
@@ -172,6 +174,12 @@ codex mcp add oh-my-android -- ohmyandroid-mcp                 # Codex CLI
 
 The JSON works in Cursor, Claude Desktop, Windsurf, Gemini CLI and other agents (VS Code uses `"servers"`).
 Homebrew puts `ohmyandroid-mcp` on your `PATH`. With the zip install, use the full path above.
+
+Other ways to add it:
+
+- **Claude Code plugin:** `/plugin marketplace add ateymoori/oh-my-android`, then `/plugin install oh-my-android@oh-my-android`
+- **Claude Desktop extension:** open `oh-my-android-<version>.mcpb` from the [latest release](https://github.com/ateymoori/oh-my-android/releases/latest)
+- **MCP Registry:** listed as `io.github.ateymoori/oh-my-android`
 
 **You stay in control:** menu bar icon → **AI Agents** → *Off*, *Read only* or *Full control*. The server
 checks it on every call, so a change applies at once. Tools that can lose data are marked destructive,

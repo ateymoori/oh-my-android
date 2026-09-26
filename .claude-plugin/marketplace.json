@@ -1,0 +1,15 @@
+{
+  "name": "oh-my-android",
+  "owner": {
+    "name": "Amir Teymoori",
+    "url": "https://github.com/ateymoori"
+  },
+  "description": "Oh My Android: control the Android Emulator and phones from Claude Code.",
+  "plugins": [
+    {
+      "name": "oh-my-android",
+      "source": "./",
+      "description": "Let Claude see and drive the Android Emulator and phones: screenshots in dp, UI tree, tap, dark mode, RTL, logcat. Needs the Oh My Android app."
+    }
+  ]
+}

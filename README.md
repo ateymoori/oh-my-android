@@ -367,7 +367,7 @@ Needs Xcode 26. Local builds are ad-hoc signed, so you need no Apple Developer a
 Sources/
   App/        entry point, AppDelegate (host actions), Settings, assets
   Core/       no UI, no feature knowledge
-    Shell/    ShellRunning: non-blocking Process runner with a watchdog timeout
+    Shell/    ShellRunning: non-blocking Process runner, stopped on timeout or cancellation
     Android/  AndroidSDK, ADBClient, DeviceTracker (adb track-devices), UI hierarchy, app data
     SQLite/, Imaging/
   Features/   one small type per capability, registered in FeatureCatalog (Foundation only)

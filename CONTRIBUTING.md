@@ -20,7 +20,9 @@ Local builds are ad-hoc signed, so no Apple Developer account is needed.
 - Dependency direction: `UI → State → Features → Core`. Features import Foundation only;
   anything with AppKit (pickers, clipboard, Finder) goes through `HostActions`.
 - Nothing polls. Device changes come from the adb server's `track-devices` socket (no child process that could outlive the app); feature values are read on demand.
-- Every `Process` goes through `ShellRunning`: non-blocking, with a watchdog timeout.
+- Every `Process` starts in `Core/Shell/ShellRunner.swift`: `ShellRunning` for commands (non-blocking,
+  terminated on timeout or when the calling task is cancelled), `Process.detached` for the adb server and
+  the emulator (no pipes a daemon could inherit).
 - Text from the user is quoted with `String.shellQuoted` before it reaches `adb shell`.
 - Destructive actions set `isDestructive = true`; the panel then asks before running them.
 
@@ -32,6 +34,8 @@ Local builds are ad-hoc signed, so no Apple Developer account is needed.
    round-trip.
 3. Set `requiresEmulator = true` if it uses the emulator console (`adb emu …`).
 4. Append it to `FeatureCatalog.all`. The panel renders it, reads its state, and shows errors as toasts.
+   A configured generic feature (`SettingToggleFeature`, `KeyEventFeature`, …) is a `static let` beside its
+   category, so the MCP server can reuse it by name.
 
 Check your command on an emulator and, if it is not emulator-only, on a real device.
 
@@ -43,7 +47,8 @@ The MCP server (`Sources/MCP/`) is a separate command-line target built from `Co
 2. Set `effect`: `.read` (Read only access), `.control` or `.destructive` (Full control). It also sets
    the MCP annotations clients use to ask the user.
 3. Keep it cheap for the model: one-line description, positions in dp, compact text output.
-   Validate every argument that reaches a shell command.
+   Declare allowed values (`oneOf`) and bounds (`range`) on the parameter: `call.arguments` enforces them,
+   so each limit is written once. Validate or `shellQuoted` everything else that reaches a shell command.
 4. Run the protocol test: `Scripts/test-mcp.py <path>/ohmyandroid-mcp` (CI runs it too), then try the
    tool on an emulator with `npx @modelcontextprotocol/inspector --cli <path>/ohmyandroid-mcp`.
 

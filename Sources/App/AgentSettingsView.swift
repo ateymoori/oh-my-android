@@ -58,8 +58,7 @@ struct AgentSettingsView: View {
     }
 
     private func copy() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(client.snippet, forType: .string)
+        NSPasteboard.general.copy(client.snippet)
         copied = true
     }
 

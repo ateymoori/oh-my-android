@@ -50,7 +50,7 @@ struct PanelRootView: View {
             PanelMessage(symbol: "exclamationmark.triangle", title: "adb Not Responding",
                          message: "Restart adb. If it keeps failing, restart the emulator or reconnect the phone.",
                          detail: error, tint: .orange) {
-                PanelMessageButton(title: "Restart adb", symbol: "arrow.clockwise", action: restartADB)
+                PanelMessageButton(title: "Restart adb", symbol: "arrow.clockwise", action: model.restartADB)
             }
         case .starting(let avd):
             PanelMessage(symbol: nil, title: "Starting Emulator",
@@ -67,7 +67,7 @@ struct PanelRootView: View {
         case .offline(let device):
             PanelMessage(symbol: "cable.connector.slash", title: "Device Offline",
                          message: "\(device.displayName) does not respond. Reconnect the cable, or restart adb.") {
-                PanelMessageButton(title: "Restart adb", symbol: "arrow.clockwise", action: restartADB)
+                PanelMessageButton(title: "Restart adb", symbol: "arrow.clockwise", action: model.restartADB)
             }
         case .noDevice:
             noDevice
@@ -83,13 +83,13 @@ struct PanelRootView: View {
                 : "Start an emulator, or connect a phone with USB debugging on."
         ) {
             ForEach(avds.prefix(Self.visibleAVDs), id: \.self) { avd in
-                PanelMessageButton(title: EmulatorLauncher.displayName(avd), symbol: "play.fill") { start(avd) }
+                PanelMessageButton(title: EmulatorLauncher.displayName(avd), symbol: "play.fill") { model.startEmulator(avd) }
                     .help("Start the \(EmulatorLauncher.displayName(avd)) emulator")
             }
             if avds.count > Self.visibleAVDs {
                 Menu("More Emulators") {
                     ForEach(avds.dropFirst(Self.visibleAVDs), id: \.self) { avd in
-                        Button(EmulatorLauncher.displayName(avd)) { start(avd) }
+                        Button(EmulatorLauncher.displayName(avd)) { model.startEmulator(avd) }
                     }
                 }
                 .menuStyle(.button)
@@ -105,20 +105,12 @@ struct PanelRootView: View {
 
     /// Secondary action: small and quiet, under the main one.
     private var restartLink: some View {
-        Button("Restart adb", action: restartADB)
+        Button("Restart adb", action: model.restartADB)
             .buttonStyle(.borderless)
             .font(.callout)
             .foregroundStyle(.secondary)
             .padding(.top, 2)
             .help("Kill and restart the adb server. Fixes devices stuck offline.")
-    }
-
-    private func restartADB() {
-        Task { await model.devices?.restartServer() }
-    }
-
-    private func start(_ avd: String) {
-        model.emulators?.start(avd) { message in model.features.show(Toast(kind: .error, message: message)) }
     }
 
     /// APK: install. PNG/JPEG: open the Layout Inspector with the image as design overlay.

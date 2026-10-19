@@ -19,7 +19,7 @@ enum InputTools {
     ) { call in
         let context = try await call.device()
         let target = try await call.point(context, allowText: true)
-        let x = Int(target.hierarchy.pixels(target.point.x).rounded()), y = Int(target.hierarchy.pixels(target.point.y).rounded())
+        let x = target.pixels(target.point.x), y = target.pixels(target.point.y)
         let long = try call.arguments.bool("long_press") == true
         try await context.shell(long ? "input swipe \(x) \(y) \(x) \(y) 1000" : "input tap \(x) \(y)")
         return .text("\(long ? "Long-pressed" : "Tapped") \(target.label) at \(Int(target.point.x)),\(Int(target.point.y)) dp.")
@@ -43,19 +43,18 @@ enum InputTools {
         ]
     ) { call in
         let context = try await call.device()
-        let direction = try call.arguments.choice("direction", ["up", "down", "left", "right"]) ?? { throw ToolInputError("direction is required.") }()
+        let direction = try call.arguments.requiredString("direction")
         let start = try await call.point(context, allowText: false)
         let vertical = direction == "up" || direction == "down"
         let defaultDistance = (vertical ? start.area.height : start.area.width) * 0.6
-        let distance: Double = try call.arguments.double("distance", in: 1...5000) ?? defaultDistance
+        let distance: Double = try call.arguments.double("distance") ?? defaultDistance
         let sign: Double = direction == "up" || direction == "left" ? -1 : 1
         let delta = CGVector(dx: vertical ? 0 : sign * distance, dy: vertical ? sign * distance : 0)
         // From x,y the finger starts there; otherwise the gesture is centred on the element or screen.
         let from = start.explicit ? start.point : CGPoint(x: start.point.x - delta.dx / 2, y: start.point.y - delta.dy / 2)
         let to = CGPoint(x: from.x + delta.dx, y: from.y + delta.dy)
-        let px = { (value: Double) in Int(start.hierarchy.pixels(value).rounded()) }
-        let duration = try call.arguments.int("duration_ms", in: 50...5000) ?? 300
-        try await context.shell("input swipe \(px(from.x)) \(px(from.y)) \(px(to.x)) \(px(to.y)) \(duration)")
+        let duration = try call.arguments.int("duration_ms") ?? 300
+        try await context.shell("input swipe \(start.pixels(from.x)) \(start.pixels(from.y)) \(start.pixels(to.x)) \(start.pixels(to.y)) \(duration)")
         return .text("Swiped \(direction) \(Int(distance)) dp from \(Int(from.x)),\(Int(from.y)).")
     }
 
@@ -71,11 +70,7 @@ enum InputTools {
     ) { call in
         let context = try await call.device()
         let text = try call.arguments.requiredString("text")
-        guard text.allSatisfy({ $0.isASCII && !$0.isNewline }) else {
-            throw ToolInputError("adb can type ASCII only, on one line. Use submit for Enter.")
-        }
-        // `input text` reads %s as a space.
-        try await context.shell("input text \(text.replacingOccurrences(of: " ", with: "%s").shellQuoted)")
+        try await context.shell(try TypeTextFeature.command(text))
         if try call.arguments.bool("submit") == true { try await context.shell("input keyevent 66") }
         return .text("Typed \(text.count) characters.")
     }
@@ -112,9 +107,9 @@ enum InputTools {
         ]
     ) { call in
         let context = try await call.device()
-        let key = try call.arguments.choice("key", keys.map(\.key)) ?? { throw ToolInputError("key is required.") }()
-        let command = keys.first { $0.key == key }!.value
-        let times = try call.arguments.int("times", in: 1...50) ?? 1
+        let key = try call.arguments.requiredString("key")
+        guard let command = keys.first(where: { $0.key == key })?.value else { throw ToolInputError("Unknown key \(key).") }
+        let times = try call.arguments.int("times") ?? 1
         try await context.shell(Array(repeating: command, count: times).joined(separator: "; "))
         return .text("Pressed \(key)\(times > 1 ? " \(times) times" : "").")
     }
@@ -128,7 +123,10 @@ private struct GestureTarget {
     let label: String
     /// Given as x,y by the caller.
     let explicit: Bool
-    let hierarchy: UIHierarchy
+    /// Screen density in dpi, to convert to the pixels `input` takes.
+    let density: Double
+
+    func pixels(_ dp: Double) -> Int { Int((dp * density / 160).rounded()) }
 }
 
 private extension ToolCall {
@@ -144,14 +142,13 @@ private extension ToolCall {
             let label = UITreeText.line(match.node, hierarchy) + (match.count > 1 ? " (first of \(match.count) matches)" : "")
             return target(match.node, hierarchy, label: label)
         }
-        let hierarchy = try await screenHierarchy(context)
-        let screen = CGRect(x: 0, y: 0, width: hierarchy.dp(hierarchy.screen.width), height: hierarchy.dp(hierarchy.screen.height))
+        let (screen, density) = try await screenMetrics(context)
         switch (try arguments.double("x"), try arguments.double("y")) {
         case let (x?, y?):
-            return GestureTarget(point: CGPoint(x: x, y: y), area: screen, label: "point", explicit: true, hierarchy: hierarchy)
+            return GestureTarget(point: CGPoint(x: x, y: y), area: screen, label: "point", explicit: true, density: density)
         case (nil, nil):
             guard !allowText else { throw ToolInputError("Give ref, text, or x and y.") }
-            return GestureTarget(point: CGPoint(x: screen.midX, y: screen.midY), area: screen, label: "screen", explicit: false, hierarchy: hierarchy)
+            return GestureTarget(point: CGPoint(x: screen.midX, y: screen.midY), area: screen, label: "screen", explicit: false, density: density)
         default:
             throw ToolInputError("Give both x and y.")
         }
@@ -160,19 +157,18 @@ private extension ToolCall {
     private func target(_ node: UINode, _ hierarchy: UIHierarchy, label: String) -> GestureTarget {
         let frame = CGRect(x: hierarchy.dp(node.bounds.minX), y: hierarchy.dp(node.bounds.minY),
                            width: hierarchy.dp(node.bounds.width), height: hierarchy.dp(node.bounds.height))
-        return GestureTarget(point: CGPoint(x: frame.midX, y: frame.midY), area: frame, label: label, explicit: false, hierarchy: hierarchy)
+        return GestureTarget(point: CGPoint(x: frame.midX, y: frame.midY), area: frame, label: label, explicit: false, density: hierarchy.density)
     }
 
-    /// Screen size and density. The cached tree is enough unless the display changed since; `wm` output
-    /// is cheap, and its size is swapped when the screen is rotated.
-    private func screenHierarchy(_ context: DeviceContext) async throws -> UIHierarchy {
+    /// Screen frame in dp and density, from `wm` (cheap, and current even after a rotation since the
+    /// last UI tree). The physical size is swapped when the screen is rotated.
+    private func screenMetrics(_ context: DeviceContext) async throws -> (frame: CGRect, density: Double) {
         let output = try await context.shell("wm density; dumpsys input | grep -m1 SurfaceOrientation; wm size")
-        guard let density = WindowManagerOutput.effectiveDensity(output).map(Double.init),
+        guard let density = WindowManagerOutput.effectiveDensity(output).map(Double.init), density > 0,
               var size = WindowManagerOutput.effectiveSize(output) else { throw AppError("Could not read the screen size.") }
         if let rotation = output.firstMatch(of: /SurfaceOrientation: (\d)/).flatMap({ Int($0.1) }), rotation % 2 == 1 {
             size = CGSize(width: size.height, height: size.width)
         }
-        let root = UINode(id: -1, className: "", resourceID: "", text: "", contentDescription: "", bounds: CGRect(origin: .zero, size: size), flags: .init())
-        return UIHierarchy(root: root, density: density)
+        return (CGRect(x: 0, y: 0, width: size.width * 160 / density, height: size.height * 160 / density), density)
     }
 }

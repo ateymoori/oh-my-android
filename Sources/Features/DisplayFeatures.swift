@@ -91,10 +91,10 @@ struct DeviceLanguageFeature: ChoiceFeature, BatchReadable {
 
     func select(_ optionID: String, _ context: DeviceContext) async throws {
         do {
-            try await context.shell("cmd locale set-device-locale \(optionID)")
+            try await context.shell("cmd locale set-device-locale \(optionID.shellQuoted)")
         } catch {
             // Older images: shell holds CHANGE_CONFIGURATION, so update-config applies immediately.
-            try await context.shell("am update-config --locale \(optionID)")
+            try await context.shell("am update-config --locale \(optionID.shellQuoted)")
         }
     }
 }

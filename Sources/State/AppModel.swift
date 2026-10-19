@@ -68,6 +68,16 @@ final class AppModel {
         return .noDevice
     }
 
+    /// Starts an AVD from the panel; a failed start becomes an error toast.
+    func startEmulator(_ avd: String) {
+        emulators?.start(avd) { [features] message in features.show(Toast(kind: .error, message: message)) }
+    }
+
+    /// Manual fix for devices stuck offline.
+    func restartADB() {
+        Task { await devices?.restartServer() }
+    }
+
     /// Full read of the selected device: feature values and device facts.
     func reload() async {
         guard let context else { return }

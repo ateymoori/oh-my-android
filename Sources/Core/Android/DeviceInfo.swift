@@ -7,14 +7,28 @@ struct DeviceInfo: Equatable, Sendable {
     var hasPlayServices = false
     var playServicesVersion: String?
     var abi = ""
-    var display = ""
+    /// Pixels, with a `wm size` override applied.
+    var screenSize: CGSize?
+    /// dpi, with a `wm density` override applied.
+    var density: Int?
     var memory = ""
     var storage = ""
 
     var summary: String {
-        var parts = ["Android \(androidVersion)", "API \(apiLevel)"]
-        parts.append(hasPlayServices ? "Play" : "No Play")
-        return parts.joined(separator: " · ")
+        ["Android \(androidVersion)", "API \(apiLevel)", hasPlayServices ? "Play" : "No Play"].joined(separator: " · ")
+    }
+
+    /// "1080×2400 · 420 dpi".
+    var display: String {
+        let resolution = screenSize.map { "\(Int($0.width))×\(Int($0.height))" } ?? "?"
+        return "\(resolution) · \(density.map(String.init) ?? "?") dpi"
+    }
+
+    /// Screen size in dp, such as 411×914.
+    var screenSizeDp: CGSize? {
+        guard let screenSize, let density, density > 0 else { return nil }
+        let scale = 160 / Double(density)
+        return CGSize(width: (screenSize.width * scale).rounded(), height: (screenSize.height * scale).rounded())
     }
 }
 
@@ -24,8 +38,7 @@ protocol DeviceInfoReading: Sendable {
 
 /// Collects everything in a single `adb shell` round-trip.
 struct DeviceInfoReader: DeviceInfoReading {
-    private static let separator = "@@"
-    private static let script = [
+    private static let commands = [
         "getprop ro.build.version.release",
         "getprop ro.build.version.sdk",
         "pm list packages com.google.android.gms",
@@ -35,13 +48,12 @@ struct DeviceInfoReader: DeviceInfoReading {
         "wm density",
         "grep -E 'MemTotal|MemAvailable' /proc/meminfo",
         "df -k /data | tail -1",
-    ].joined(separator: "; echo \(separator); ")
+    ]
 
     func info(on device: Device, adb: ADBClient) async throws -> DeviceInfo {
-        let sections = try await adb.shell(device, Self.script)
-            .components(separatedBy: Self.separator)
-            .map { $0.trimmed }
-        guard sections.count == 9 else { throw AppError("Unexpected device output.") }
+        guard let sections = try await adb.shell(device, sections: Self.commands)?.map(\.trimmed) else {
+            throw AppError("Unexpected device output.")
+        }
 
         var info = DeviceInfo()
         info.androidVersion = sections[0]
@@ -49,16 +61,11 @@ struct DeviceInfoReader: DeviceInfoReading {
         info.hasPlayServices = sections[2].contains("com.google.android.gms")
         info.playServicesVersion = sections[3].firstMatch(of: /versionName=([\d.]+)/).map { String($0.1) }
         info.abi = sections[4]
-        info.display = Self.display(size: sections[5], density: sections[6])
+        info.screenSize = WindowManagerOutput.effectiveSize(sections[5])
+        info.density = WindowManagerOutput.effectiveDensity(sections[6])
         info.memory = Self.memory(sections[7])
         info.storage = Self.storage(sections[8])
         return info
-    }
-
-    private static func display(size: String, density: String) -> String {
-        let resolution = WindowManagerOutput.effectiveSize(size).map { "\(Int($0.width))×\(Int($0.height))" } ?? "?"
-        let dpi = WindowManagerOutput.effectiveDensity(density).map(String.init) ?? "?"
-        return "\(resolution) · \(dpi) dpi"
     }
 
     private static func memory(_ text: String) -> String {

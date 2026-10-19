@@ -9,15 +9,16 @@ struct NetworkProfileFeature: ChoiceFeature {
     let requiresEmulator = true
     let help = "Emulated bandwidth and latency for all traffic."
 
+    /// `downloadBits` is what `network status` reports for the profile, so the current one can be read back.
     private struct Profile { let id: String; let title: String; let downloadBits: Int; let delay: String }
 
     private let profiles: [Profile] = [
         .init(id: "full", title: "Full speed", downloadBits: 0, delay: "none"),
         .init(id: "lte", title: "LTE", downloadBits: 173_000_000, delay: "30:60"),
-        .init(id: "hsdpa", title: "HSDPA", downloadBits: 14_400_000, delay: "80:150"),
-        .init(id: "umts", title: "3G", downloadBits: 1_920_000, delay: "umts"),
-        .init(id: "edge", title: "EDGE", downloadBits: 236_800, delay: "edge"),
-        .init(id: "gprs", title: "GPRS", downloadBits: 80_000, delay: "gprs"),
+        .init(id: "hsdpa", title: "HSDPA", downloadBits: 13_980_000, delay: "80:150"),
+        .init(id: "umts", title: "3G", downloadBits: 384_000, delay: "umts"),
+        .init(id: "edge", title: "EDGE", downloadBits: 473_600, delay: "edge"),
+        .init(id: "gprs", title: "GPRS", downloadBits: 57_600, delay: "gprs"),
         .init(id: "gsm", title: "GSM (worst)", downloadBits: 14_400, delay: "600:1200"),
     ]
 

@@ -44,7 +44,7 @@ struct IncomingSMSFeature: TextActionFeature {
     let placeholder = "Message text, e.g. code 123456"
 
     func perform(_ text: String, _ context: DeviceContext) async throws -> String? {
-        try await context.console("sms", "send", "5551234567", text)
+        try await context.console("sms", "send", EmulatorFeatures.testPhoneNumber, text)
         return nil
     }
 }

@@ -40,17 +40,10 @@ enum DeviceTools {
         let device = context.device
         return .text([
             "\(device.displayName) (\(device.serial), \(device.isEmulator ? "emulator" : "phone")): Android \(facts.androidVersion), API \(facts.apiLevel), \(facts.hasPlayServices ? "Google Play" : "no Google Play"), \(facts.abi)",
-            "Screen: \(facts.display)\(dpSize(facts.display))",
+            "Screen: \(facts.display)" + (facts.screenSizeDp.map { " = \(Int($0.width))x\(Int($0.height)) dp" } ?? ""),
             "App on screen: \(await foreground ?? "none")",
             "Settings: " + (await settings),
         ].joined(separator: "\n"))
-    }
-
-    /// " = 411x914 dp" from "1080×2400 · 420 dpi".
-    private static func dpSize(_ display: String) -> String {
-        guard let match = display.firstMatch(of: /(\d+)×(\d+) · (\d+) dpi/),
-              let width = Double(match.1), let height = Double(match.2), let dpi = Double(match.3), dpi > 0 else { return "" }
-        return " = \(Int((width * 160 / dpi).rounded()))x\(Int((height * 160 / dpi).rounded())) dp"
     }
 
     static let setDeviceSettings = Tool(
@@ -97,7 +90,7 @@ enum DeviceSettings {
             key: "font_scale", parameter: .number("font_scale", "Font size multiplier. 1 is default; 1.3 and 2 test large text.", range: 0.5...3),
             read: FontScaleFeature().read
         ) { arguments, context in
-            try await FontScaleFeature().setValue(try arguments.double("font_scale", in: 0.5...3)!, context)
+            try await FontScaleFeature().setValue(try arguments.requiredDouble("font_scale"), context)
         },
         DeviceSetting(
             key: "display_scale", parameter: .number("display_scale", "Display size (dp scale). 1 is default; 1.35 makes everything larger.", range: 0.5...2),
@@ -107,7 +100,7 @@ enum DeviceSettings {
                 return .number(Double(density.override ?? physical) / Double(physical))
             }
         ) { arguments, context in
-            try await DisplayScaleFeature().setValue(try arguments.double("display_scale", in: 0.5...2)!, context)
+            try await DisplayScaleFeature().setValue(try arguments.requiredDouble("display_scale"), context)
         },
         DeviceSetting(
             key: "locale", parameter: .string("locale", "BCP 47 locale, e.g. en-US, sv-SE; ar-EG for RTL; en-XA (long text) and ar-XB (RTL) pseudo-locales."),
@@ -125,12 +118,12 @@ enum DeviceSettings {
                 return .choice(values[0] == "1" ? "auto" : (Int(values[1]) ?? 0) % 2 == 0 ? "portrait" : "landscape")
             }
         ) { arguments, context in
-            switch try arguments.choice("orientation", ["portrait", "landscape", "auto"]) {
-            case "auto": try await context.putSetting("system", "accelerometer_rotation", "1")
-            case let value?:
+            let orientation = try arguments.requiredString("orientation")
+            if orientation == "auto" {
+                try await context.putSetting("system", "accelerometer_rotation", "1")
+            } else {
                 try await context.putSetting("system", "accelerometer_rotation", "0")
-                try await context.putSetting("system", "user_rotation", value == "portrait" ? "0" : "1")
-            case nil: break
+                try await context.putSetting("system", "user_rotation", orientation == "portrait" ? "0" : "1")
             }
         },
         toggle("talkback", "TalkBack screen reader.", TalkBackFeature()),
@@ -142,10 +135,10 @@ enum DeviceSettings {
                 return .toggle(!off)
             }
         ) { arguments, context in
-            try await AnimationsOffFeature().setOn(!(try arguments.bool("animations")!), context)
+            try await AnimationsOffFeature().setOn(!(try arguments.requiredBool("animations")), context)
         },
-        toggle("layout_bounds", "Show layout bounds overlay.", catalog("debug.layoutBounds")),
-        toggle("show_taps", "Show touches on screen.", catalog("debug.showTaps")),
+        toggle("layout_bounds", "Show layout bounds overlay.", DebugPropertyToggleFeature.layoutBounds),
+        toggle("show_taps", "Show touches on screen.", SettingToggleFeature.showTaps),
         toggle("airplane_mode", "Airplane mode: no network.", AirplaneModeFeature()),
         toggle("wifi", "Wi-Fi.", WifiFeature()),
         toggle("mobile_data", "Mobile data.", MobileDataFeature()),
@@ -153,17 +146,16 @@ enum DeviceSettings {
             key: "network_speed", parameter: .string("network_speed", "Emulator only. Bandwidth and latency profile.", oneOf: NetworkProfileFeature().options.map(\.id)),
             emulatorOnly: true
         ) { arguments, context in
-            let feature = NetworkProfileFeature()
-            try await feature.select(try arguments.choice("network_speed", feature.options.map(\.id))!, context)
+            try await NetworkProfileFeature().select(try arguments.requiredString("network_speed"), context)
         },
         DeviceSetting(key: "location", parameter: .string("location", "Emulator only. GPS fix as \"lat,lon\", e.g. \"59.3293,18.0686\"."), emulatorOnly: true) { arguments, context in
             _ = try await CustomLocationFeature().perform(try arguments.requiredString("location"), context)
         },
         DeviceSetting(key: "battery_level", parameter: .integer("battery_level", "Emulator only. Battery percent.", range: 0...100), emulatorOnly: true) { arguments, context in
-            try await BatteryLevelFeature().select(String(try arguments.int("battery_level", in: 0...100)!), context)
+            try await BatteryLevelFeature().select(String(try arguments.requiredInt("battery_level")), context)
         },
         DeviceSetting(key: "charging", parameter: .boolean("charging", "Emulator only. Charger connected."), emulatorOnly: true) { arguments, context in
-            try await ChargingFeature().setOn(try arguments.bool("charging")!, context)
+            try await ChargingFeature().setOn(try arguments.requiredBool("charging"), context)
         },
     ]
 
@@ -176,7 +168,7 @@ enum DeviceSettings {
             async let battery = try? BatteryLevelFeature().selection(context)
             async let charging = try? ChargingFeature().isOn(context)
             values["network_speed"] = await speed ?? "custom"
-            values["battery_level"] = await battery ?? nil
+            values["battery_level"] = await battery
             values["charging"] = await charging.map { $0 ? "on" : "off" }
         }
         return all.compactMap { setting in values[setting.key].map { "\(setting.key)=\($0)" } }.joined(separator: " ")
@@ -192,15 +184,7 @@ enum DeviceSettings {
 
     private static func toggle(_ key: String, _ description: String, _ feature: some ToggleFeature & BatchReadable) -> DeviceSetting {
         DeviceSetting(key: key, parameter: .boolean(key, description), read: feature.read) { arguments, context in
-            try await feature.setOn(try arguments.bool(key)!, context)
+            try await feature.setOn(try arguments.requiredBool(key), context)
         }
-    }
-
-    /// A panel feature by id. The ids are fixed in FeatureCatalog; a rename fails at launch, not silently.
-    private static func catalog(_ id: String) -> any ToggleFeature & BatchReadable {
-        guard let feature = FeatureCatalog.all.first(where: { $0.id == id }) as? any ToggleFeature & BatchReadable else {
-            fatalError("FeatureCatalog has no toggle \(id)")
-        }
-        return feature
     }
 }

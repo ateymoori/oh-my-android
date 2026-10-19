@@ -10,9 +10,15 @@ enum CaptureLocation {
         timeZone: .current, calendar: Calendar(identifier: .gregorian)
     )
 
+    /// The Captures folder, created if needed.
+    @discardableResult static func ensureDirectory() throws -> URL {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
     /// New file URL in the Captures folder; never overwrites an earlier capture from the same second.
     static func file(_ prefix: String, _ ext: String) throws -> URL {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try ensureDirectory()
         let base = "\(prefix) \(Date().formatted(stampFormat))"
         var url = directory.appending(path: "\(base).\(ext)")
         var counter = 2
@@ -164,8 +170,7 @@ struct RevealCapturesFeature: ActionFeature {
     let category = FeatureCategory.capture
 
     func perform(_ context: DeviceContext) async throws -> String? {
-        try FileManager.default.createDirectory(at: CaptureLocation.directory, withIntermediateDirectories: true)
-        await context.host.reveal(CaptureLocation.directory)
+        await context.host.reveal(try CaptureLocation.ensureDirectory())
         return nil
     }
 }

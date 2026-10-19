@@ -26,8 +26,9 @@ protocol ShellRunning: Sendable {
     func runData(_ executable: URL, arguments: [String]) async throws -> Data
 }
 
-/// Runs executables with `Process` without blocking any thread: pipes drain through readability
-/// handlers and completion arrives through the termination handler.
+/// Runs executables with `Process` without blocking any thread: pipes drain through a dispatch source
+/// and completion arrives through the termination handler. Cancelling the calling task, or the
+/// timeout, terminates the process.
 struct ProcessShellRunner: ShellRunning {
     /// Upper bound for one command. adb answers in milliseconds; anything longer is a hung server.
     var timeout: Duration = .seconds(60)
@@ -45,7 +46,7 @@ struct ProcessShellRunner: ShellRunning {
         let output = try await launch(executable, arguments: arguments)
         guard output.status == 0 else {
             throw ShellError(
-                command: executable.lastPathComponent + " " + arguments.joined(separator: " "),
+                command: Self.describe(executable, arguments),
                 result: ShellResult(stdout: "", stderr: String(decoding: output.stderr, as: UTF8.self), exitCode: output.status)
             )
         }
@@ -55,12 +56,7 @@ struct ProcessShellRunner: ShellRunning {
     /// Runs a process with no pipes and waits for it to exit. For `adb start-server`: the client returns
     /// once the daemon is up, and the daemon cannot inherit (and hold open) a pipe of ours.
     static func runDetached(_ executable: URL, arguments: [String]) async {
-        let process = Process()
-        process.executableURL = executable
-        process.arguments = arguments
-        process.standardInput = FileHandle.nullDevice
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        let process = Process.detached(executable, arguments: arguments)
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             process.terminationHandler = { _ in continuation.resume() }
             do { try process.run() } catch {
@@ -73,6 +69,7 @@ struct ProcessShellRunner: ShellRunning {
     private struct Output: Sendable { let stdout: Data; let stderr: Data; let status: Int32 }
 
     private func launch(_ executable: URL, arguments: [String]) async throws -> Output {
+        try Task.checkCancellation()
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments
@@ -82,25 +79,55 @@ struct ProcessShellRunner: ShellRunning {
         process.standardOutput = stdout.pipe
         process.standardError = stderr.pipe
 
-        let watchdog = Task.detached(priority: .background) { [timeout] in
+        // Returns true when it had to stop the process.
+        let watchdog = Task.detached(priority: .background) { [timeout] () -> Bool in
             try? await Task.sleep(for: timeout)
-            if !Task.isCancelled, process.isRunning { process.terminate() }
+            guard !Task.isCancelled, process.isRunning else { return false }
+            process.terminate()
+            return true
         }
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { finished in
-                watchdog.cancel()
-                continuation.resume(returning: Output(stdout: stdout.finish(), stderr: stderr.finish(), status: finished.terminationStatus))
+        defer { watchdog.cancel() }
+        let output = try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Output, any Error>) in
+                process.terminationHandler = { finished in
+                    continuation.resume(returning: Output(stdout: stdout.finish(), stderr: stderr.finish(), status: finished.terminationStatus))
+                }
+                do {
+                    try process.run()
+                } catch {
+                    process.terminationHandler = nil
+                    _ = stdout.finish()
+                    _ = stderr.finish()
+                    continuation.resume(throwing: error)
+                }
             }
-            do {
-                try process.run()
-            } catch {
-                watchdog.cancel()
-                process.terminationHandler = nil
-                _ = stdout.finish()
-                _ = stderr.finish()
-                continuation.resume(throwing: error)
-            }
+        } onCancel: {
+            if process.isRunning { process.terminate() }
         }
+        watchdog.cancel()
+        if await watchdog.value {
+            throw AppError("\(Self.describe(executable, arguments)) gave no answer in \(timeout.components.seconds) s.")
+        }
+        try Task.checkCancellation()
+        return output
+    }
+
+    private static func describe(_ executable: URL, _ arguments: [String]) -> String {
+        ([executable.lastPathComponent] + arguments).joined(separator: " ")
+    }
+}
+
+extension Process {
+    /// Process whose standard streams are all /dev/null. A child that forks a daemon (`adb start-server`)
+    /// cannot inherit a pipe of ours and hold it open, and nothing waits on its output.
+    static func detached(_ executable: URL, arguments: [String]) -> Process {
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = arguments
+        process.standardInput = FileHandle.nullDevice
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        return process
     }
 }
 

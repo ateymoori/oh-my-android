@@ -26,7 +26,7 @@ actor MCPServer {
         [
             "name": "oh-my-android",
             "title": "Oh My Android",
-            "version": .string(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"),
+            "version": .string(Bundle.main.shortVersion),
             "websiteUrl": "https://github.com/ateymoori/oh-my-android",
         ]
     }
@@ -142,7 +142,8 @@ actor MCPServer {
             ).json
         }
         AgentSettings.recordUse(client: clientName)
-        let call = ToolCall(arguments: Arguments(values: params["arguments"]?.object ?? [:]), environment: environment)
+        let arguments = Arguments(values: params["arguments"]?.object ?? [:], parameters: tool.allParameters)
+        let call = ToolCall(arguments: arguments, environment: environment)
         do {
             return try await tool.run(call).json
         } catch {

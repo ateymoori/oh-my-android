@@ -79,13 +79,12 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: NO
         COMBINE_HIDPI_IMAGES: YES
 
-  # MCP server for AI agents. Shares Core and Features with the app; Imaging needs AppKit and stays out.
+  # MCP server for AI agents. Shares Core and Features with the app.
   ohmyandroid-mcp:
     type: tool
     platform: macOS
     sources:
       - path: Sources/Core
-        excludes: ["Imaging/**"]
       - path: Sources/Features
       - path: Sources/MCP
     settings:

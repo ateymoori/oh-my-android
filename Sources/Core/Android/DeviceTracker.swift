@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// Emits a signal whenever the set of connected devices may have changed.
 protocol DeviceTracking: Sendable {
@@ -10,14 +11,19 @@ protocol DeviceTracking: Sendable {
 /// Push-based tracking through the adb server's `host:track-devices` service: one local socket the server
 /// writes to on every connect, disconnect, or state change. No polling, and no child process that could
 /// outlive the app: a crash or force quit closes the socket with the app.
-final class ADBDeviceTracker: DeviceTracking, @unchecked Sendable {
+final class ADBDeviceTracker: DeviceTracking {
+    private struct State {
+        var connection: FileHandle?
+        var continuation: AsyncStream<Void>.Continuation?
+        var stopped = false
+        var retryDelay = ADBDeviceTracker.firstRetryDelay
+    }
+
+    private static let firstRetryDelay: Duration = .seconds(2)
+    private static let maxRetryDelay: Duration = .seconds(60)
     private let adb: URL
     private let port: UInt16
-    private let lock = NSLock()
-    private var connection: FileHandle?
-    private var continuation: AsyncStream<Void>.Continuation?
-    private var stopped = false
-    private var retryDelay: TimeInterval = 2
+    private let state = Mutex(State())
 
     init(adb: URL, environment: [String: String] = ProcessInfo.processInfo.environment) {
         self.adb = adb
@@ -27,17 +33,30 @@ final class ADBDeviceTracker: DeviceTracking, @unchecked Sendable {
     func events() -> AsyncStream<Void> {
         // A burst of changes (emulator boot) needs one re-read, not one per line: keep the newest signal only.
         AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
-            lock.withLock {
-                self.continuation = continuation
-                self.stopped = false
+            state.withLock {
+                $0.continuation = continuation
+                $0.stopped = false
             }
             continuation.onTermination = { [weak self] _ in self?.stop() }
             connect()
         }
     }
 
+    func stop() {
+        let connection = state.withLock { state in
+            state.stopped = true
+            state.continuation = nil
+            defer { state.connection = nil }
+            return state.connection
+        }
+        connection?.readabilityHandler = nil
+        try? connection?.close()
+    }
+
+    private var isStopped: Bool { state.withLock(\.stopped) }
+
     private func connect() {
-        guard !lock.withLock({ stopped }) else { return }
+        guard !isStopped else { return }
         guard let handle = Self.openTrackingSocket(port: port) else { return retryLater() }
         handle.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
@@ -47,44 +66,30 @@ final class ADBDeviceTracker: DeviceTracking, @unchecked Sendable {
                 handle.readabilityHandler = nil
                 retryLater()
             } else {
-                lock.withLock { retryDelay = 2; return continuation }?.yield()
+                state.withLock { state in
+                    state.retryDelay = Self.firstRetryDelay
+                    return state.continuation
+                }?.yield()
             }
         }
-        lock.withLock { connection = handle }
+        state.withLock { $0.connection = handle }
     }
 
     /// Starts the adb server, then reconnects. Waits 2 s, doubling up to a minute while it keeps failing.
     private func retryLater() {
-        let delay: TimeInterval? = lock.withLock {
-            guard !stopped else { return nil }
-            connection = nil
-            defer { retryDelay = min(retryDelay * 2, 60) }
-            return retryDelay
+        let delay: Duration? = state.withLock { state in
+            guard !state.stopped else { return nil }
+            state.connection = nil
+            defer { state.retryDelay = min(state.retryDelay * 2, Self.maxRetryDelay) }
+            return state.retryDelay
         }
         guard let delay else { return }
-        DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, !lock.withLock({ self.stopped }) else { return }
-            // No pipes: the forked server would inherit them and the wait would never end.
-            let server = Process()
-            server.executableURL = adb
-            server.arguments = ["start-server"]
-            server.standardInput = FileHandle.nullDevice
-            server.standardOutput = FileHandle.nullDevice
-            server.standardError = FileHandle.nullDevice
-            server.terminationHandler = { [weak self] _ in self?.connect() }
-            do { try server.run() } catch { connect() }
+        Task { [weak self, adb] in
+            try? await Task.sleep(for: delay)
+            guard self?.isStopped == false else { return }
+            await ProcessShellRunner.runDetached(adb, arguments: ["start-server"])
+            self?.connect()
         }
-    }
-
-    func stop() {
-        let connection = lock.withLock {
-            stopped = true
-            continuation = nil
-            defer { self.connection = nil }
-            return self.connection
-        }
-        connection?.readabilityHandler = nil
-        try? connection?.close()
     }
 
     /// Connected socket with the track-devices request sent, or nil when the server does not answer.

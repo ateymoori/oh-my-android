@@ -70,7 +70,7 @@ enum DataTools {
             let schema = try await withCopy(package, database, call, context) { try SQLiteSnapshot.schema(at: $0) }
             return .text(schema.map { entry in entry.rows.map { "-- \($0) rows\n" + entry.sql + ";" } ?? entry.sql + ";" }.joined(separator: "\n"))
         }
-        let limit = try call.arguments.int("limit", in: 1...500) ?? 50
+        let limit = try call.arguments.int("limit") ?? 50
         let result = try await withCopy(package, database, call, context) { try SQLiteSnapshot.run(sql, at: $0, limit: limit) }
         var lines = [result.columns.joined(separator: "\t")]
         lines += result.rows.map { row in row.cells.map { clip($0).replacingOccurrences(of: "\t", with: " ") }.joined(separator: "\t") }
@@ -103,7 +103,7 @@ private extension ToolCall {
     /// Target package, checked for `run-as` access so the model gets a clear reason instead of empty lists.
     func debuggablePackage(_ context: DeviceContext) async throws -> String {
         let package = try await package(context)
-        guard (try? await context.shell("run-as \(package) true && echo ok").trimmed) == "ok" else {
+        guard (try? await context.shell("run-as \(package.shellQuoted) true && echo ok").trimmed) == "ok" else {
             throw AppError("\(package) is not debuggable (or not installed). App data needs a debug build; list_apps marks debuggable apps.")
         }
         return package

@@ -31,6 +31,17 @@ struct LayoutInspectorFeature: ActionFeature {
     }
 }
 
+extension DebugPropertyToggleFeature {
+    static let layoutBounds = DebugPropertyToggleFeature(id: "debug.layoutBounds", title: "Bounds", symbol: "rectangle.dashed", property: "debug.layout", onValue: "true")
+    static let overdraw = DebugPropertyToggleFeature(id: "debug.overdraw", title: "Overdraw", symbol: "square.3.layers.3d", property: "debug.hwui.overdraw", onValue: "show")
+    static let gpuBars = DebugPropertyToggleFeature(id: "debug.gpuBars", title: "GPU bars", symbol: "chart.bar.fill", property: "debug.hwui.profile", onValue: "visual_bars")
+}
+
+extension SettingToggleFeature {
+    static let showTaps = SettingToggleFeature(id: "debug.showTaps", title: "Show taps", symbol: "hand.tap.fill", category: .layout, namespace: "system", key: "show_touches")
+    static let pointerLocation = SettingToggleFeature(id: "debug.pointer", title: "Pointer", symbol: "scope", category: .layout, namespace: "system", key: "pointer_location")
+}
+
 /// Opens Developer options for everything the panel does not cover.
 struct DeveloperOptionsFeature: ActionFeature {
     let id = "debug.devOptions"

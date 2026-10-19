@@ -29,8 +29,7 @@ struct Device: Identifiable, Hashable, Sendable {
     var isReady: Bool { isOnline && isBooted }
     /// Why the device cannot take commands yet, or nil when it can.
     var problem: String? { state.problem ?? (isBooted ? nil : "starting") }
-    var displayName: String { avdName?.replacingOccurrences(of: "_", with: " ") ?? model }
-    var symbol: String { isEmulator ? "macbook.and.iphone" : "iphone" }
+    var displayName: String { avdName.map(EmulatorLauncher.displayName) ?? model }
     /// Console port of an emulator serial such as "emulator-5554".
     var consolePort: Int? { isEmulator ? Int(serial.dropFirst("emulator-".count)) : nil }
 }

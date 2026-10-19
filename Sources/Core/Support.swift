@@ -32,3 +32,8 @@ enum WindowManagerOutput {
         return CGSize(width: width, height: height)
     }
 }
+
+extension Bundle {
+    /// Marketing version, such as "0.4.5"; "dev" when the bundle has none.
+    var shortVersion: String { object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev" }
+}

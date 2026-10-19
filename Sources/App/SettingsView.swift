@@ -1,19 +1,23 @@
 import ServiceManagement
 import SwiftUI
 
+enum SettingsTab: String {
+    case general, agents
+}
+
 struct SettingsView: View {
     /// Shared with the menu, which opens the AI Agents tab directly.
     static let tabKey = "settings.tab"
-    @AppStorage(SettingsView.tabKey) private var tab = "general"
+    @AppStorage(SettingsView.tabKey) private var tab = SettingsTab.general
 
     var body: some View {
         TabView(selection: $tab) {
             GeneralSettingsView()
                 .tabItem { Label("General", systemImage: "gearshape") }
-                .tag("general")
+                .tag(SettingsTab.general)
             AgentSettingsView()
                 .tabItem { Label("AI Agents", systemImage: "sparkles") }
-                .tag("agents")
+                .tag(SettingsTab.agents)
         }
         .frame(width: 540)
         .fixedSize(horizontal: false, vertical: true)
@@ -55,8 +59,7 @@ private struct GeneralSettingsView: View {
                     HStack {
                         Text(CaptureLocation.directory.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                         Button("Show in Finder") {
-                            try? FileManager.default.createDirectory(at: CaptureLocation.directory, withIntermediateDirectories: true)
-                            NSWorkspace.shared.activateFileViewerSelecting([CaptureLocation.directory])
+                            if let folder = try? CaptureLocation.ensureDirectory() { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
                         }
                     }
                 }
@@ -105,7 +108,7 @@ private struct GeneralSettingsView: View {
 
 private struct UpdateSettingsSection: View {
     @Environment(UpdateController.self) private var updates
-    private let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+    private let version = Bundle.main.shortVersion
 
     var body: some View {
         @Bindable var updates = updates

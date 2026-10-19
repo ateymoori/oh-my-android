@@ -1,6 +1,11 @@
 import Foundation
 
 enum EmulatorFeatures {
+    /// Caller of simulated calls and SMS.
+    static let testPhoneNumber = "5551234567"
+    /// Snapshot behind the panel's Save state and Restore.
+    static let snapshotName = "ohmyandroid_clean"
+
     static let rotate = ConsoleActionFeature(
         id: "emulator.rotate", title: "Rotate", symbol: "rotate.right.fill", category: .appearance, arguments: ["rotate"]
     )
@@ -9,14 +14,14 @@ enum EmulatorFeatures {
     )
     static let incomingCall = ConsoleActionFeature(
         id: "emulator.call", title: "Call", symbol: "phone.arrow.down.left.fill", category: .simulate,
-        arguments: ["gsm", "call", "5551234567"]
+        arguments: ["gsm", "call", testPhoneNumber]
     )
     static let snapshotSave = ConsoleActionFeature(
         id: "emulator.snapshotSave", title: "Save state", symbol: "square.and.arrow.down.fill", category: .snapshots,
-        arguments: ["avd", "snapshot", "save", "ohmyandroid_clean"], message: "Snapshot saved"
+        arguments: ["avd", "snapshot", "save", snapshotName], message: "Snapshot saved"
     )
     static let snapshotLoad = ConsoleActionFeature(
         id: "emulator.snapshotLoad", title: "Restore", symbol: "clock.arrow.circlepath", category: .snapshots,
-        arguments: ["avd", "snapshot", "load", "ohmyandroid_clean"], message: "Snapshot restored"
+        arguments: ["avd", "snapshot", "load", snapshotName], message: "Snapshot restored"
     )
 }

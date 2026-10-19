@@ -18,12 +18,7 @@ enum EmulatorLauncher {
 
     /// Starts the AVD with its window. `exited` runs if the process ends, with its exit status.
     static func launch(_ avd: String, sdk: AndroidSDK, exited: @escaping @Sendable (Int32) -> Void) throws {
-        let process = Process()
-        process.executableURL = executable(sdk)
-        process.arguments = ["-avd", avd]
-        process.standardInput = FileHandle.nullDevice
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        let process = Process.detached(executable(sdk), arguments: ["-avd", avd])
         process.terminationHandler = { exited($0.terminationStatus) }
         try process.run()
     }

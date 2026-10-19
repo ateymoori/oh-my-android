@@ -24,6 +24,9 @@ struct UINode: Identifiable, Hashable, Sendable {
         var password = false
         /// uiautomator's own "not accessibility friendly" verdict: actionable but unlabeled.
         var naf = false
+
+        /// A screen-reader stop of its own: TalkBack focuses it and reads its children as part of it.
+        var isActionable: Bool { clickable || longClickable || focusable || checkable }
     }
 
     /// "TextView" instead of "android.widget.TextView".
@@ -57,7 +60,6 @@ struct UIHierarchy: Sendable {
 
     var screen: CGSize { root.bounds.size }
     func dp(_ pixels: Double) -> Double { pixels * 160 / density }
-    func pixels(_ dp: Double) -> Double { dp * density / 160 }
 }
 
 /// Screenshot plus hierarchy taken at the same moment.

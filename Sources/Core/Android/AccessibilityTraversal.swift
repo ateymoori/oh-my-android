@@ -28,8 +28,7 @@ enum AccessibilityTraversal {
     /// `viewport` is the nearest scrolling container: nodes cut by its edges are only partly on screen.
     private static func visit(_ node: UINode, hierarchy: UIHierarchy, viewport: CGRect, into items: inout [AccessibilityItem]) {
         guard node.bounds.width > 0, node.bounds.height > 0 else { return }
-        let actionable = node.flags.clickable || node.flags.focusable || node.flags.checkable || node.flags.longClickable
-        if actionable {
+        if node.flags.isActionable {
             items.append(item(for: node, mergedText: mergedText(node), hierarchy: hierarchy, viewport: viewport, order: items.count + 1))
             return
         }
@@ -61,7 +60,7 @@ enum AccessibilityTraversal {
         if node.flags.clickable, node.flags.enabled { parts.append("double-tap to activate") }
 
         var issues: [String] = []
-        let actionable = node.flags.clickable || node.flags.focusable || node.flags.checkable
+        let actionable = node.flags.isActionable
         if actionable, mergedText.isEmpty { issues.append("No label: TalkBack says only \"\(role.isEmpty ? "unlabeled" : role)\"") }
         if node.flags.naf { issues.append("NAF: actionable without accessible text") }
         if role == "Image", node.contentDescription.isEmpty, node.text.isEmpty, !actionable { issues.append("Image without description (fine only if decorative)") }
@@ -90,15 +89,15 @@ enum AccessibilityTraversal {
         return node.contentDescription.isEmpty ? node.text : node.contentDescription
     }
 
-    static func role(of node: UINode) -> String {
+    private static func role(of node: UINode) -> String {
         let cls = node.shortClass
+        // Specific names first: ToggleButton and RadioButton also contain "Button".
         switch true {
-        case cls.contains("ImageButton"): return "Button"
-        case cls.contains("Button"): return "Button"
         case cls.contains("EditText"), cls.contains("AutoComplete"): return "Edit field"
         case cls.contains("CheckBox"): return "Checkbox"
         case cls.contains("Switch"), cls.contains("ToggleButton"): return "Switch"
         case cls.contains("RadioButton"): return "Radio button"
+        case cls.contains("Button"): return "Button"
         case cls.contains("SeekBar"), cls.contains("Slider"): return "Slider"
         case cls.contains("Spinner"): return "Dropdown"
         case cls.contains("ImageView"): return "Image"

@@ -35,11 +35,11 @@ enum FeatureCatalog {
 
         // Layout & performance
         LayoutInspectorFeature(),
-        DebugPropertyToggleFeature(id: "debug.layoutBounds", title: "Bounds", symbol: "rectangle.dashed", property: "debug.layout", onValue: "true"),
-        DebugPropertyToggleFeature(id: "debug.overdraw", title: "Overdraw", symbol: "square.3.layers.3d", property: "debug.hwui.overdraw", onValue: "show"),
-        DebugPropertyToggleFeature(id: "debug.gpuBars", title: "GPU bars", symbol: "chart.bar.fill", property: "debug.hwui.profile", onValue: "visual_bars"),
-        SettingToggleFeature(id: "debug.showTaps", title: "Show taps", symbol: "hand.tap.fill", category: .layout, namespace: "system", key: "show_touches"),
-        SettingToggleFeature(id: "debug.pointer", title: "Pointer", symbol: "scope", category: .layout, namespace: "system", key: "pointer_location"),
+        DebugPropertyToggleFeature.layoutBounds,
+        DebugPropertyToggleFeature.overdraw,
+        DebugPropertyToggleFeature.gpuBars,
+        SettingToggleFeature.showTaps,
+        SettingToggleFeature.pointerLocation,
         AnimationsOffFeature(),
         DeveloperOptionsFeature(),
 
@@ -49,12 +49,12 @@ enum FeatureCatalog {
         ColorInversionFeature(),
 
         // Navigation & input
-        BackFeature(),
-        HomeFeature(),
-        RecentsFeature(),
+        KeyEventFeature.back,
+        KeyEventFeature.home,
+        KeyEventFeature.recents,
         TypeTextFeature(),
-        HideKeyboardFeature(),
-        SettingToggleFeature(id: "input.softKeyboard", title: "Soft keys", symbol: "keyboard.fill", category: .navigation, namespace: "secure", key: "show_ime_with_hard_keyboard"),
+        KeyEventFeature.hideKeyboard,
+        SettingToggleFeature.softKeyboard,
 
         // Simulate (emulator only)
         LocationPresetFeature(),

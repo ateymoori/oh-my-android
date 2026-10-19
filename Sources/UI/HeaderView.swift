@@ -39,14 +39,14 @@ struct HeaderView: View {
                 Menu("Start Emulator") {
                     ForEach(emulators.avds, id: \.self) { avd in
                         Button(EmulatorLauncher.displayName(avd)) {
-                            emulators.start(avd) { message in model.features.show(Toast(kind: .error, message: message)) }
+                            model.startEmulator(avd)
                         }
                     }
                 }
                 .disabled(emulators.starting != nil)
             }
             Divider()
-            Button("Restart adb") { Task { await model.devices?.restartServer() } }
+            Button("Restart adb", action: model.restartADB)
                 .help("Kill and restart the adb server. Fixes devices stuck offline.")
         } label: {
             HStack(spacing: 6) {
@@ -68,4 +68,8 @@ struct HeaderView: View {
     private var headerTitle: String {
         (model.devices?.selected ?? model.devices?.devices.first)?.displayName ?? "No Device"
     }
+}
+
+private extension Device {
+    var symbol: String { isEmulator ? "macbook.and.iphone" : "iphone" }
 }

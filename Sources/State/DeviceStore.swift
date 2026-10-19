@@ -26,9 +26,6 @@ final class DeviceStore {
         self.tracker = tracker
     }
 
-    /// True when devices exist but none accepts commands (offline, unauthorized, booting).
-    var hasOnlyUnreadyDevices: Bool { !devices.isEmpty && !devices.contains(where: \.isReady) }
-
     /// Starts the adb server first: a server spawned implicitly by the tracker would inherit its pipe.
     func start(startServer: @escaping @Sendable () async -> Void) {
         trackingTask?.cancel()

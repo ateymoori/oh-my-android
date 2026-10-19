@@ -12,18 +12,15 @@ enum AppTools {
         parameters: [.string("filter", "Only packages that contain this.")]
     ) { call in
         let context = try await call.device()
-        async let foreground = try? context.foregroundPackage()
-        let script = "for p in $(pm list packages -3 | cut -d: -f2); do if run-as $p true >/dev/null 2>&1; then echo \"$p debuggable\"; else echo $p; fi; done"
         let filter = try call.arguments.string("filter")?.trimmed ?? ""
+        async let foreground = try? context.foregroundPackage()
+        let apps = try await call.environment.appData.installedApps(on: context.device, adb: context.adb)
+            .filter { filter.isEmpty || $0.package.localizedCaseInsensitiveContains(filter) }
         let current = await foreground
-        let lines = try await context.shell(script).split(whereSeparator: \.isNewline)
-            .map { $0.split(separator: " ").map(String.init) }
-            .filter { !$0.isEmpty && (filter.isEmpty || $0[0].localizedCaseInsensitiveContains(filter)) }
-            .sorted { $0[0] < $1[0] }
-            .map { parts in
-                let marks = Array(parts.dropFirst()) + (parts[0] == current ? ["on screen"] : [])
-                return marks.isEmpty ? parts[0] : "\(parts[0]) (\(marks.joined(separator: ", ")))"
-            }
+        let lines = apps.map { app in
+            let marks = (app.isDebuggable ? ["debuggable"] : []) + (app.package == current ? ["on screen"] : [])
+            return marks.isEmpty ? app.package : "\(app.package) (\(marks.joined(separator: ", ")))"
+        }
         return .text(lines.isEmpty ? "No matching apps." : lines.joined(separator: "\n"))
     }
 
@@ -80,7 +77,7 @@ enum AppTools {
         ]
     ) { call in
         let context = try await call.device()
-        let action = try call.arguments.choice("action", manageActions) ?? { throw ToolInputError("action is required.") }()
+        let action = try call.arguments.requiredString("action")
         let package = try await call.package(context)
         let command: String
         switch action {
@@ -134,7 +131,7 @@ enum AppTools {
         let crash = try arguments.bool("crash") == true
         var options = ["-d", "-v", "tag"]
         if crash { options += ["-b", "crash"] }
-        if let seconds = try arguments.int("since_seconds", in: 1...86400) { options.append("-T \"$(( $(date +%s) - \(seconds) )).000\"") }
+        if let seconds = try arguments.int("since_seconds") { options.append("-T \"$(( $(date +%s) - \(seconds) )).000\"") }
         var script = ""
         var filter = ""
         if arguments.has("package"), !crash {
@@ -142,9 +139,9 @@ enum AppTools {
             script = "P=$(pidof -s \(package)); [ -z \"$P\" ] && echo '@@NOT_RUNNING' && exit 0; "
             options.append("--pid=$P")
         }
-        let level = try arguments.choice("level", levels) ?? "W"
+        let level = try arguments.string("level") ?? "W"
         if let pattern = try arguments.string("grep"), !pattern.isEmpty { filter += " | grep -iE -- \(pattern.shellQuoted)" }
-        let count = try arguments.int("lines", in: 1...1000) ?? 100
+        let count = try arguments.int("lines") ?? 100
         script += "logcat \(options.joined(separator: " ")) '*:\(level)'\(filter) | tail -n \(count)"
         let output = try await context.shell(script)
         if output.contains("@@NOT_RUNNING") { return .text("The app is not running. Launch it with open_app, or pass crash=true for crashes.") }

@@ -59,6 +59,7 @@ struct ForegroundAppActionFeature: ActionFeature {
     let symbol: String
     let category: FeatureCategory = .app
     var isDestructive = false
+    /// Shell command for the package; quote the package with `shellQuoted`.
     let command: @Sendable (String) -> String
     var message: (@Sendable (String) -> String)? = nil
 
@@ -72,26 +73,26 @@ struct ForegroundAppActionFeature: ActionFeature {
 extension ForegroundAppActionFeature {
     static let clearData = ForegroundAppActionFeature(
         id: "app.clearData", title: "Clear data", symbol: "trash.fill", isDestructive: true,
-        command: { "pm clear \($0)" }, message: { "Cleared data of \($0)" }
+        command: { "pm clear \($0.shellQuoted)" }, message: { "Cleared data of \($0)" }
     )
     static let forceStop = ForegroundAppActionFeature(
         id: "app.forceStop", title: "Force stop", symbol: "xmark.octagon.fill",
-        command: { "am force-stop \($0)" }
+        command: { "am force-stop \($0.shellQuoted)" }
     )
     static let restart = ForegroundAppActionFeature(
         id: "app.restart", title: "Restart", symbol: "arrow.clockwise",
-        command: { "am force-stop \($0) && monkey -p \($0) -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1" }
+        command: { "am force-stop \($0.shellQuoted) && monkey -p \($0.shellQuoted) -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1" }
     )
     static let appInfo = ForegroundAppActionFeature(
         id: "app.info", title: "App info", symbol: "info.circle.fill",
-        command: { "am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d package:\($0)" }
+        command: { "am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d package:\($0.shellQuoted)" }
     )
     static let revokePermissions = ForegroundAppActionFeature(
         id: "app.revoke", title: "Permissions", symbol: "hand.raised.fill", isDestructive: true,
-        command: { "pm reset-permissions -p \($0)" }, message: { "Permissions reset for \($0)" }
+        command: { "pm reset-permissions -p \($0.shellQuoted)" }, message: { "Permissions reset for \($0)" }
     )
     static let uninstall = ForegroundAppActionFeature(
         id: "app.uninstall", title: "Uninstall", symbol: "trash.slash.fill", isDestructive: true,
-        command: { "pm uninstall \($0)" }, message: { "Uninstalled \($0)" }
+        command: { "pm uninstall \($0.shellQuoted)" }, message: { "Uninstalled \($0)" }
     )
 }

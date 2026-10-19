@@ -7,10 +7,18 @@ struct PreferenceEntry: Identifiable, Hashable, Sendable {
     var id: String { key }
 }
 
+/// A third-party app and whether `run-as` opens its private storage.
+struct InstalledApp: Hashable, Sendable {
+    let package: String
+    /// Built with `debuggable = true`, so its data can be read.
+    let isDebuggable: Bool
+}
+
 /// Read-only access to an app's private storage. Uses `run-as`, which Android grants for debuggable
 /// builds only — the same door Android Studio's inspectors use. Release apps stay closed, by design.
 protocol AppDataReading: Sendable {
-    func debuggablePackages(on device: Device, adb: ADBClient) async throws -> [String]
+    /// Third-party apps, sorted by package, in one shell call.
+    func installedApps(on device: Device, adb: ADBClient) async throws -> [InstalledApp]
     func preferenceFiles(of package: String, on device: Device, adb: ADBClient) async throws -> [String]
     func preferences(of package: String, file: String, on device: Device, adb: ADBClient) async throws -> [PreferenceEntry]
     func databaseFiles(of package: String, on device: Device, adb: ADBClient) async throws -> [String]
@@ -18,10 +26,21 @@ protocol AppDataReading: Sendable {
     func pullDatabase(of package: String, name: String, on device: Device, adb: ADBClient) async throws -> URL
 }
 
-struct RunAsAppDataReader: AppDataReading {
+extension AppDataReading {
     func debuggablePackages(on device: Device, adb: ADBClient) async throws -> [String] {
-        let script = "for p in $(pm list packages -3 | cut -d: -f2); do run-as $p id >/dev/null 2>&1 && echo $p; done"
-        return try await adb.shell(device, script).split(whereSeparator: \.isNewline).map { String($0).trimmed }.filter { !$0.isEmpty }.sorted()
+        try await installedApps(on: device, adb: adb).filter(\.isDebuggable).map(\.package)
+    }
+}
+
+struct RunAsAppDataReader: AppDataReading {
+    func installedApps(on device: Device, adb: ADBClient) async throws -> [InstalledApp] {
+        let script = "for p in $(pm list packages -3 | cut -d: -f2); do if run-as $p true >/dev/null 2>&1; then echo \"$p 1\"; else echo \"$p 0\"; fi; done"
+        return try await adb.shell(device, script).split(whereSeparator: \.isNewline)
+            .compactMap { line in
+                let parts = line.split(separator: " ")
+                return parts.first.map { InstalledApp(package: String($0), isDebuggable: parts.last == "1") }
+            }
+            .sorted { $0.package < $1.package }
     }
 
     func preferenceFiles(of package: String, on device: Device, adb: ADBClient) async throws -> [String] {
@@ -29,7 +48,7 @@ struct RunAsAppDataReader: AppDataReading {
     }
 
     func preferences(of package: String, file: String, on device: Device, adb: ADBClient) async throws -> [PreferenceEntry] {
-        let xml = try await adb.execOut(device, "run-as \(package) cat shared_prefs/\(file.shellQuoted)")
+        let xml = try await adb.execOut(device, "run-as \(package.shellQuoted) cat shared_prefs/\(file.shellQuoted)")
         return PreferencesXMLParser.parse(xml)
     }
 
@@ -42,14 +61,21 @@ struct RunAsAppDataReader: AppDataReading {
     func pullDatabase(of package: String, name: String, on device: Device, adb: ADBClient) async throws -> URL {
         let directory = FileManager.default.temporaryDirectory.appending(path: "ohmyandroid-db-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let local = directory.appending(path: name)
-        try await adb.execOut(device, "run-as \(package) cat databases/\(name.shellQuoted)").write(to: local)
-        for suffix in ["-wal", "-shm"] {
-            guard let data = try? await adb.execOut(device, "run-as \(package) cat databases/\((name + suffix).shellQuoted)"),
-                  Self.looksLikeSQLiteSideFile(data, suffix: suffix) else { continue }
-            try data.write(to: directory.appending(path: name + suffix))
+        func cat(_ file: String) async throws -> Data {
+            try await adb.execOut(device, "run-as \(package.shellQuoted) cat databases/\(file.shellQuoted)")
         }
-        return local
+        do {
+            let local = directory.appending(path: name)
+            try await cat(name).write(to: local)
+            for suffix in ["-wal", "-shm"] {
+                guard let data = try? await cat(name + suffix), Self.looksLikeSQLiteSideFile(data, suffix: suffix) else { continue }
+                try data.write(to: directory.appending(path: name + suffix))
+            }
+            return local
+        } catch {
+            try? FileManager.default.removeItem(at: directory)  // never leave a partial copy of private data behind
+            throw error
+        }
     }
 
     /// A failed `cat` can print its error to stdout; only keep real side files (WAL magic 0x377f068x, SHM header).
@@ -59,7 +85,7 @@ struct RunAsAppDataReader: AppDataReading {
     }
 
     private func list(_ directory: String, of package: String, on device: Device, adb: ADBClient) async throws -> [String] {
-        let output = (try? await adb.shell(device, "run-as \(package) ls -1 \(directory) 2>/dev/null")) ?? ""
+        let output = (try? await adb.shell(device, "run-as \(package.shellQuoted) ls -1 \(directory) 2>/dev/null")) ?? ""
         return output.split(whereSeparator: \.isNewline).map { String($0).trimmed }.filter { !$0.isEmpty }.sorted()
     }
 }

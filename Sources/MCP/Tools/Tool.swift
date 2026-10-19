@@ -45,41 +45,49 @@ struct Tool: Sendable {
         ]
     }
 
-    private var allParameters: [ToolParameter] {
+    var allParameters: [ToolParameter] {
         targetsDevice ? parameters + [.string("device", "Device serial (list_devices). Only needed with several devices.")] : parameters
     }
 }
 
-/// One property of a tool's input schema.
+/// One property of a tool's input schema. Its allowed values and bounds are also what `Arguments`
+/// checks, so each limit is written once.
 struct ToolParameter: Sendable {
+    enum Kind: String, Sendable { case string, number, integer, boolean }
+
     let name: String
-    let schema: JSONValue
-    let required: Bool
+    let kind: Kind
+    let description: String
+    var required = false
+    /// Allowed values of a string.
+    var values: [String]?
+    /// Bounds of a number or integer.
+    var range: ClosedRange<Double>?
 
     static func string(_ name: String, _ description: String, required: Bool = false, oneOf values: [String]? = nil) -> ToolParameter {
-        var schema: [String: JSONValue] = ["type": "string", "description": .string(description)]
-        if let values { schema["enum"] = .array(values.map(JSONValue.string)) }
-        return ToolParameter(name: name, schema: .object(schema), required: required)
+        ToolParameter(name: name, kind: .string, description: description, required: required, values: values)
     }
 
     static func number(_ name: String, _ description: String, required: Bool = false, range: ClosedRange<Double>? = nil) -> ToolParameter {
-        ToolParameter(name: name, schema: .object(bounded(["type": "number", "description": .string(description)], range)), required: required)
+        ToolParameter(name: name, kind: .number, description: description, required: required, range: range)
     }
 
     static func integer(_ name: String, _ description: String, required: Bool = false, range: ClosedRange<Double>? = nil) -> ToolParameter {
-        ToolParameter(name: name, schema: .object(bounded(["type": "integer", "description": .string(description)], range)), required: required)
+        ToolParameter(name: name, kind: .integer, description: description, required: required, range: range)
     }
 
     static func boolean(_ name: String, _ description: String, required: Bool = false) -> ToolParameter {
-        ToolParameter(name: name, schema: ["type": "boolean", "description": .string(description)], required: required)
+        ToolParameter(name: name, kind: .boolean, description: description, required: required)
     }
 
-    private static func bounded(_ schema: [String: JSONValue], _ range: ClosedRange<Double>?) -> [String: JSONValue] {
-        guard let range else { return schema }
-        var schema = schema
-        schema["minimum"] = .double(range.lowerBound)
-        schema["maximum"] = .double(range.upperBound)
-        return schema
+    var schema: JSONValue {
+        var schema: [String: JSONValue] = ["type": .string(kind.rawValue), "description": .string(description)]
+        if let values { schema["enum"] = .array(values.map(JSONValue.string)) }
+        if let range {
+            schema["minimum"] = .double(range.lowerBound)
+            schema["maximum"] = .double(range.upperBound)
+        }
+        return .object(schema)
     }
 }
 
@@ -116,35 +124,41 @@ struct ToolInputError: LocalizedError {
     var errorDescription: String? { message }
 }
 
-/// Arguments of one call, read with type checks. Models sometimes send numbers and booleans as strings;
-/// those are accepted when they parse cleanly.
+/// Arguments of one call, read with type checks and the limits the tool declares. Models sometimes send
+/// numbers and booleans as strings; those are accepted when they parse cleanly.
 struct Arguments: Sendable {
     let values: [String: JSONValue]
+    let parameters: [String: ToolParameter]
+
+    init(values: [String: JSONValue], parameters: [ToolParameter] = []) {
+        self.values = values
+        self.parameters = Dictionary(parameters.map { ($0.name, $0) }) { first, _ in first }
+    }
 
     func has(_ key: String) -> Bool { values[key].map { $0 != .null } ?? false }
 
+    /// A string; for a parameter with allowed values, one of them.
     func string(_ key: String) throws -> String? {
         guard let value = values[key], value != .null else { return nil }
         guard let string = value.string else { throw ToolInputError("\(key) must be a string.") }
+        if let allowed = parameters[key]?.values, !allowed.contains(string) {
+            throw ToolInputError("\(key) must be one of: \(allowed.joined(separator: ", ")).")
+        }
         return string
     }
 
-    func requiredString(_ key: String) throws -> String {
-        guard let value = try string(key), !value.isEmpty else { throw ToolInputError("\(key) is required.") }
-        return value
-    }
-
-    func double(_ key: String, in range: ClosedRange<Double>? = nil) throws -> Double? {
+    func double(_ key: String) throws -> Double? {
         guard let value = values[key], value != .null else { return nil }
         guard let number = value.double ?? value.string.flatMap({ Double($0.trimmed) }) else { throw ToolInputError("\(key) must be a number.") }
-        if let range, !range.contains(number) { throw ToolInputError("\(key) must be from \(range.lowerBound) to \(range.upperBound).") }
+        if let range = parameters[key]?.range, !range.contains(number) {
+            throw ToolInputError("\(key) must be from \(Self.format(range.lowerBound)) to \(Self.format(range.upperBound)).")
+        }
         return number
     }
 
-    func int(_ key: String, in range: ClosedRange<Int>? = nil) throws -> Int? {
+    func int(_ key: String) throws -> Int? {
         guard let number = try double(key) else { return nil }
-        guard number.rounded() == number, let value = Int(exactly: number) else { throw ToolInputError("\(key) must be a whole number.") }
-        if let range, !range.contains(value) { throw ToolInputError("\(key) must be from \(range.lowerBound) to \(range.upperBound).") }
+        guard let value = Int(exactly: number) else { throw ToolInputError("\(key) must be a whole number.") }
         return value
     }
 
@@ -158,10 +172,19 @@ struct Arguments: Sendable {
         }
     }
 
-    func choice(_ key: String, _ allowed: [String]) throws -> String? {
-        guard let value = try string(key) else { return nil }
-        guard allowed.contains(value) else { throw ToolInputError("\(key) must be one of: \(allowed.joined(separator: ", ")).") }
+    func requiredString(_ key: String) throws -> String { try require(string(key).flatMap { $0.isEmpty ? nil : $0 }, key) }
+    func requiredDouble(_ key: String) throws -> Double { try require(double(key), key) }
+    func requiredInt(_ key: String) throws -> Int { try require(int(key), key) }
+    func requiredBool(_ key: String) throws -> Bool { try require(bool(key), key) }
+
+    private func require<Value>(_ value: Value?, _ key: String) throws -> Value {
+        guard let value else { throw ToolInputError("\(key) is required.") }
         return value
+    }
+
+    /// "1" rather than "1.0" for whole bounds.
+    private static func format(_ bound: Double) -> String {
+        Int(exactly: bound).map(String.init) ?? String(bound)
     }
 }
 

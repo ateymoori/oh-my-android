@@ -20,7 +20,7 @@ private struct MenuBarContent: View {
     let delegate: AppDelegate
     @Environment(\.openSettings) private var openSettings
     @AppStorage(AgentSettings.accessKey) private var agentAccess = AgentSettings.defaultAccess
-    @AppStorage(SettingsView.tabKey) private var settingsTab = "general"
+    @AppStorage(SettingsView.tabKey) private var settingsTab = SettingsTab.general
 
     var body: some View {
         if let version = delegate.updates.pendingVersion {
@@ -34,7 +34,7 @@ private struct MenuBarContent: View {
         Button("Data Inspector…") { delegate.openDataInspector() }
             .disabled(delegate.model.context == nil)
         Divider()
-        Button("Restart adb") { Task { await delegate.model.devices?.restartServer() } }
+        Button("Restart adb", action: delegate.model.restartADB)
             .disabled(delegate.model.devices == nil)
         Divider()
         Menu("AI Agents") {
@@ -43,17 +43,17 @@ private struct MenuBarContent: View {
             }
             .pickerStyle(.inline)
             Divider()
-            Button("Set Up…") { showSettings(tab: "agents") }
+            Button("Set Up…") { showSettings(tab: .agents) }
         }
         Divider()
         Button("Check for Updates…") { delegate.updates.checkForUpdates() }
-        Button("Settings…") { showSettings(tab: "general") }
+        Button("Settings…") { showSettings(tab: .general) }
             .keyboardShortcut(",")
         Button("Quit Oh My Android") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 
-    private func showSettings(tab: String) {
+    private func showSettings(tab: SettingsTab) {
         settingsTab = tab
         NSApp.activate()  // otherwise the window opens behind the frontmost app
         openSettings()

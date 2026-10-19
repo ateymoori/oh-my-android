@@ -44,7 +44,7 @@ struct LayoutInspectorView: View {
                 .keyboardShortcut("o", modifiers: .command)
                 .help("Overlay a Figma export — or drop a PNG on this window (⌘O)")
             Button {
-                if let text = store.describeSelection() { copy(text) }
+                if let text = store.describeSelection() { NSPasteboard.general.copy(text) }
             } label: { Label("Copy", systemImage: "doc.on.doc") }
                 .disabled(store.selected == nil)
                 .keyboardShortcut("c", modifiers: .command)
@@ -179,7 +179,7 @@ private struct InfoBar: View {
         .padding(.vertical, 8)
         .background(.bar)
         .background {
-            Button("") { if let pixel = store.hoveredColor { copy(pixel.hex) } }
+            Button("") { if let pixel = store.hoveredColor { NSPasteboard.general.copy(pixel.hex) } }
                 .keyboardShortcut("c", modifiers: [.command, .shift]).hidden()
         }
     }
@@ -209,11 +209,6 @@ private struct InfoBar: View {
 
 private extension PixelColor {
     var color: Color { Color(red: Double(red) / 255, green: Double(green) / 255, blue: Double(blue) / 255) }
-}
-
-private func copy(_ text: String) {
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(text, forType: .string)
 }
 
 /// Draws grid, outlines and measurement lines over the screenshot. All geometry in pixels × scale.

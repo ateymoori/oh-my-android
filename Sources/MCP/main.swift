@@ -2,7 +2,7 @@ import Foundation
 
 // ohmyandroid-mcp: the Oh My Android MCP server. An AI agent starts it and talks JSON-RPC over stdin/stdout.
 
-let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+let version = Bundle.main.shortVersion
 let executable = Bundle.main.executablePath ?? CommandLine.arguments[0]
 let help = """
 ohmyandroid-mcp \(version): MCP server of Oh My Android (https://github.com/ateymoori/oh-my-android)

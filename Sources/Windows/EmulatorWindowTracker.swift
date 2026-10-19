@@ -15,7 +15,7 @@ struct EmulatorWindowTracker {
         for window in windows {
             guard (window[kCGWindowLayer as String] as? Int) == 0,
                   let owner = window[kCGWindowOwnerName as String] as? String,
-                  owner.lowercased().contains("qemu"),
+                  owner.hasPrefix("qemu-system"),  // the emulator process; never other apps named after QEMU
                   let pid = window[kCGWindowOwnerPID as String] as? Int,
                   let boundsDict = window[kCGWindowBounds as String] as? NSDictionary,
                   let bounds = CGRect(dictionaryRepresentation: boundsDict),

@@ -82,6 +82,8 @@ enum SQLiteSnapshot {
             throw AppError("SQLite: \(message)")
         }
         defer { sqlite3_close(db) }
+        // ATTACH counts as read-only to SQLite, but it would open other files on this Mac: allow none.
+        sqlite3_limit(db, SQLITE_LIMIT_ATTACHED, 0)
         return try body(db)
     }
 
@@ -107,7 +109,11 @@ enum SQLiteSnapshot {
         let columns = (0..<count).map { String(cString: sqlite3_column_name(statement, Int32($0))) }
         var rows: [TableRow] = []
         var truncated = false
-        while sqlite3_step(statement) == SQLITE_ROW {
+        while true {
+            let step = sqlite3_step(statement)
+            if step == SQLITE_DONE { break }
+            // A failing step (bad row, refused ATTACH) is an error, not an empty result.
+            guard step == SQLITE_ROW else { throw AppError("SQLite: \(String(cString: sqlite3_errmsg(db)))") }
             guard rows.count < limit else { truncated = true; break }
             let cells = (0..<count).map { column -> String in
                 let index = Int32(column)

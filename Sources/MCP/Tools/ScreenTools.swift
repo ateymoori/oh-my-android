@@ -47,7 +47,7 @@ enum ScreenTools {
     ) { call in
         let context = try await call.device()
         let query = try call.arguments.string("query")?.trimmed
-        let deadline = Date.now.addingTimeInterval(try call.arguments.double("wait_seconds", in: 0...30) ?? 0)
+        let deadline = Date.now.addingTimeInterval(try call.arguments.double("wait_seconds") ?? 0)
         async let foreground = try? context.foregroundPackage()
         while true {
             let hierarchy = try await call.freshHierarchy(context)

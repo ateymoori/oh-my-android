@@ -1,29 +1,21 @@
 <p align="center">
-  <img src="docs/icon.png" width="112" alt="Oh My Android app icon: a surprised Android robot">
+  <img src="docs/icon.png" width="96" alt="Oh My Android app icon: a surprised Android robot">
 </p>
 
 <h1 align="center">Oh My Android</h1>
 
 <p align="center">
-  <b>The missing control panel for the Android Emulator on macOS: a free ADB GUI for Mac.</b><br>
-  Dark mode, font size, RTL language, TalkBack, network speed, GPS and more: one click each, no <code>adb</code> commands.<br>
-  Layout Inspector in dp, accessibility audit, and an <b>MCP server</b> so AI agents can drive your emulator.
+  <b>Test your Android app in dark mode, big fonts, RTL and TalkBack: one click each, no adb commands.</b><br>
+  A free, native ADB GUI for Mac that docks next to the Android Emulator. Works with real phones too.
 </p>
 
 <p align="center">
   <a href="https://github.com/ateymoori/oh-my-android/releases/latest"><img src="https://img.shields.io/github/v/release/ateymoori/oh-my-android?label=release&color=3DDC84" alt="Latest release"></a>
-  <a href="https://royan.se/work/oh-my-android/"><img src="https://img.shields.io/badge/website-royan.se-0B7285" alt="Oh My Android website"></a>
   <a href="#install"><img src="https://img.shields.io/badge/brew-oh--my--android-FBB040?logo=homebrew&logoColor=white" alt="Homebrew cask"></a>
-  <a href="#ai-agents-mcp"><img src="https://img.shields.io/badge/MCP-server-8A2BE2" alt="MCP server for AI agents"></a>
-  <a href="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml"><img src="https://github.com/ateymoori/oh-my-android/actions/workflows/build.yml/badge.svg" alt="Build status"></a>
-  <img src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple" alt="macOS 26 or later">
+  <img src="https://img.shields.io/badge/macOS-26%2B%20%C2%B7%20Apple%20silicon-000000?logo=apple" alt="macOS 26 or later, Apple silicon">
+  <a href="https://androidweekly.net/issues/issue-747"><img src="https://img.shields.io/badge/Android%20Weekly-%23747-3DDC84" alt="Featured in Android Weekly #747"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <a href="https://github.com/ateymoori/oh-my-android/stargazers"><img src="https://img.shields.io/github/stars/ateymoori/oh-my-android?style=social" alt="GitHub stars"></a>
-</p>
-
-<p align="center">
-  <b>Install:</b> <code>brew install --cask ateymoori/tap/oh-my-android</code> · free and open source<br>
-  <b>Website:</b> <a href="https://royan.se/work/oh-my-android/">royan.se/work/oh-my-android</a>
 </p>
 
 <p align="center">
@@ -31,16 +23,36 @@
   <br><sub>Dark mode, font size, Arabic RTL, incoming SMS and call. Each is one click.</sub>
 </p>
 
+## Install
+
+```sh
+brew install --cask ateymoori/tap/oh-my-android
+```
+
+<sub>Or the signed, notarized zip from <a href="https://github.com/ateymoori/oh-my-android/releases/latest">Releases</a> · macOS 26 Tahoe+ · Apple silicon · uses the Android SDK you already have (<a href="#updates-and-requirements">details</a>) · ⭐ star to help more Android devs find it</sub>
+
+- 🎛️ **Nearly 50 test actions, always visible.** Dark mode, font and display size, language and locale incl. RTL and pseudo-locales, TalkBack, bold text, layout bounds, show taps, animations off, network speed, GPS, incoming call and SMS. Each icon shows the device's real state.
+- 📐 **Layout Inspector in dp, for any app.** Hover a view to see its size and the gaps around it in dp, for Compose and Views alike. Drop your Figma export on top to compare design and build. ⇧⌘A numbers the TalkBack stops and flags missing labels and touch targets under 48 dp.
+- 🗄️ **Your debug build, without adb.** Read SharedPreferences and SQLite, clear data, open deep links, drag an APK to install, reset permissions.
+- 🪶 **Native and light.** SwiftUI, event-driven, no Electron, no telemetry. Free and open source (MIT).
+
+> **Why not just Android Studio?** Studio's Device UI shortcuts already give one-click dark mode, font size,
+> app language and TalkBack (API 33+). Use them when Studio is open. Oh My Android adds one always-visible panel
+> for emulators *and* phones that works with Studio closed, toggles the shortcuts don't have (bold text,
+> pseudo-locales, layout bounds, show taps, animations), and dp measurements on any app, where Studio's
+> Layout Inspector needs a debuggable one. Compared with Studio, scrcpy and mobile-mcp: [docs/COMPARISON.md](docs/COMPARISON.md).
+
+> 🤖 **Using Claude Code, Codex or Cursor?** The app ships an MCP server (18 tools) so your agent can
+> screenshot the emulator in dp, tap, and switch dark mode or RTL. [Set it up →](#ai-agents-mcp)
+
 <table align="center">
   <tr>
     <td align="center"><a href="#features"><img src="docs/panel.jpg" height="340" alt="The Oh My Android control panel with appearance, app, capture and network actions"></a></td>
     <td align="center"><a href="#layout-inspector"><img src="docs/layout-inspector-talkback.jpg" height="340" alt="Layout Inspector with dp measurements and the TalkBack order audit"></a></td>
-    <td align="center"><a href="#ai-agents-mcp"><img src="docs/ai-agents.jpg" height="340" alt="AI Agents settings: access level and one-step MCP setup for Claude Code, Codex, Cursor and VS Code"></a></td>
   </tr>
   <tr>
     <td align="center"><b>Control panel</b></td>
     <td align="center"><b>Layout Inspector + TalkBack audit</b></td>
-    <td align="center"><b>MCP server for AI agents</b></td>
   </tr>
 </table>
 
@@ -54,59 +66,6 @@
   <a href="CONTRIBUTING.md">Contribute</a> ·
   <a href="https://royan.se/work/oh-my-android/">Website</a>
 </p>
-
-## Why Oh My Android?
-
-Testing an Android app means doing the same chores over and over: switch to dark mode, make the
-font huge, change the language to Arabic to check RTL, turn on TalkBack, throttle the network to 3G,
-clear the app data, take a screenshot. Each one is buried in the emulator's settings or needs an
-`adb shell` command you have to look up again.
-
-**Oh My Android puts all of them in a floating panel next to the emulator.** Every icon shows the
-real state of the device, and one click changes it. It is a native macOS app for Android developers and
-QA testers: an Android Emulator GUI, an `adb` GUI for real phones, a Layout Inspector in dp, an
-accessibility checker, and an Android MCP server for Claude Code, Codex, Cursor and other AI coding agents.
-
-- ⚡ **One click** for nearly 50 everyday test actions
-- 📱 **Emulators and real phones**: USB or Wi‑Fi `adb`
-- 🔍 **Layout Inspector**: measure any view in dp, Figma-style, and overlay your design
-- ♿ **Accessibility audit**: TalkBack order, missing labels, small touch targets
-- 🗄️ **Data Inspector**: SharedPreferences and SQLite of your debug build
-- 🤖 **MCP server for AI agents**: your coding agent can see the screen, tap, switch settings and read logs
-- 🪶 **Native and light**: SwiftUI, Liquid Glass, event-driven (easy on the battery), no Electron, no telemetry
-- 🆓 **Free and open source** (MIT)
-
-How it compares with Android Studio, scrcpy and other tools: [docs/COMPARISON.md](docs/COMPARISON.md).
-
-## Install
-
-```sh
-brew install --cask ateymoori/tap/oh-my-android
-```
-
-Or download the zip from the [latest release](https://github.com/ateymoori/oh-my-android/releases/latest),
-unzip it, and move **Oh My Android.app** to Applications. The app is signed and notarized by Apple.
-
-**Updates:** when a new version is out, a dot shows on the menu bar icon. Click **Update to …** in the
-menu, read what's new, and install in one click. The app never updates without asking. It checks once a
-day; turn it off in **Settings → Updates**. `brew upgrade --cask oh-my-android` works too.
-
-**Requirements:** macOS 26 Tahoe or later, Apple silicon, and the Android SDK from
-[Android Studio](https://developer.android.com/studio) (or `brew install --cask android-commandlinetools`).
-The app finds the SDK by itself. If yours is in an unusual folder, pick it in **Settings → Android SDK**.
-
-### Use it from Claude Code, Codex or Cursor
-
-```sh
-brew install --cask ateymoori/tap/oh-my-android
-
-claude mcp add --scope user oh-my-android -- ohmyandroid-mcp   # Claude Code
-codex mcp add oh-my-android -- ohmyandroid-mcp                 # Codex CLI
-gemini mcp add --scope user oh-my-android ohmyandroid-mcp      # Gemini CLI
-```
-
-For Cursor and VS Code, use the install buttons in [AI agents (MCP)](#ai-agents-mcp).
-Then start an emulator and ask your agent: *"Take a screenshot of the emulator and check this screen in dark mode."*
 
 ## Features
 
@@ -123,6 +82,19 @@ Then start an emulator and ask your agent: *"Take a screenshot of the emulator a
 | 💾 **Snapshots** (emulator) | Save a clean state and restore it in seconds |
 
 Destructive actions (Clear data, Uninstall, Reset permissions) ask before they run.
+
+## Updates and requirements
+
+Besides Homebrew, you can download the zip from the [latest release](https://github.com/ateymoori/oh-my-android/releases/latest),
+unzip it, and move **Oh My Android.app** to Applications. The app is signed and notarized by Apple.
+
+**Updates:** when a new version is out, a dot shows on the menu bar icon. Click **Update to …** in the
+menu, read what's new, and install in one click. The app never updates without asking. It checks once a
+day; turn it off in **Settings → Updates**. `brew upgrade --cask oh-my-android` works too.
+
+**Requirements:** macOS 26 Tahoe or later, Apple silicon, and the Android SDK from
+[Android Studio](https://developer.android.com/studio) (or `brew install --cask android-commandlinetools`).
+The app finds the SDK by itself. If yours is in an unusual folder, pick it in **Settings → Android SDK**.
 
 ## No more adb commands
 
@@ -193,6 +165,7 @@ The buttons use the Homebrew path `/opt/homebrew/bin/ohmyandroid-mcp`. With the 
 ```sh
 claude mcp add --scope user oh-my-android -- ohmyandroid-mcp   # Claude Code
 codex mcp add oh-my-android -- ohmyandroid-mcp                 # Codex CLI
+gemini mcp add --scope user oh-my-android ohmyandroid-mcp      # Gemini CLI
 ```
 
 ```json
@@ -225,6 +198,7 @@ Ready-made prompts: `accessibility_review`, `ui_matrix` (dark mode, large fonts,
 and `debug_crash`.
 
 **Try asking your agent:**
+- *"Take a screenshot of the emulator and check this screen in dark mode."*
 - *"Open the app, go to Settings, and check it in dark mode, font scale 2 and Arabic. Fix what breaks."*
 - *"The app crashes when I tap Save. Reproduce it, read the crash, and fix it."*
 - *"Audit the login screen for TalkBack and fix the problems in the code."*

@@ -19,8 +19,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" width="760" alt="Demo: the Oh My Android panel beside the Android Emulator switches dark mode, font size and language to Arabic RTL, then simulates an incoming SMS and call">
-  <br><sub>Dark mode, font size, Arabic RTL, incoming SMS and call. Each is one click.</sub>
+  <img src="docs/demo.gif" width="560" alt="Demo: the Oh My Android panel docked beside the Android Emulator turns on dark mode, raises the font size to 2x and switches the device to Arabic, right to left, in the Settings app">
+  <br><sub>Dark mode, font size 2×, Arabic right-to-left: one click each.</sub>
 </p>
 
 ## Install
@@ -29,20 +29,27 @@
 brew install --cask ateymoori/tap/oh-my-android
 ```
 
-<sub>Or the signed, notarized zip from <a href="https://github.com/ateymoori/oh-my-android/releases/latest">Releases</a> · macOS 26 Tahoe+ · Apple silicon · uses the Android SDK you already have (<a href="#updates-and-requirements">details</a>) · ⭐ star to help more Android devs find it</sub>
+<sub>Or the signed, notarized zip from <a href="https://github.com/ateymoori/oh-my-android/releases/latest">Releases</a> · macOS 26 Tahoe+ · Apple silicon · uses the Android SDK you already have (<a href="#updates-and-requirements">details</a>)</sub>
 
-- 🎛️ **Nearly 50 test actions, always visible.** Dark mode, font and display size, language and locale incl. RTL and pseudo-locales, TalkBack, bold text, layout bounds, show taps, animations off, network speed, GPS, incoming call and SMS. Each icon shows the device's real state.
-- 📐 **Layout Inspector in dp, for any app.** Hover a view to see its size and the gaps around it in dp, for Compose and Views alike. Drop your Figma export on top to compare design and build. ⇧⌘A numbers the TalkBack stops and flags missing labels and touch targets under 48 dp.
-- 🗄️ **Your debug build, without adb.** Read SharedPreferences and SQLite, clear data, open deep links, drag an APK to install, reset permissions.
-- 🪶 **Native and light.** SwiftUI, event-driven, no Electron, no telemetry. Free and open source (MIT).
+- **48 test actions, always visible.** Dark mode, font and display size, language and locale incl. RTL and pseudo-locales, TalkBack, bold text, layout bounds, show taps, animations off, network speed, GPS, incoming call and SMS. Each icon shows the device's real state.
+- **Layout Inspector in dp, for any app.** Hover a view to see its size and the gaps around it in dp, for Compose and Views alike. Drop your Figma export on top to compare design and build. ⇧⌘A numbers the TalkBack stops and flags missing labels and touch targets under 48 dp.
+- **Your debug build, without adb.** Read SharedPreferences and SQLite, clear data, open deep links, drag an APK to install, reset permissions.
+- **Native and light.** SwiftUI, event-driven, no Electron, no telemetry. Free and open source (MIT).
 
-> **Why not just Android Studio?** Studio's Device UI shortcuts already give one-click dark mode, font size,
-> app language and TalkBack (API 33+). Use them when Studio is open. Oh My Android adds one always-visible panel
-> for emulators *and* phones that works with Studio closed, toggles the shortcuts don't have (bold text,
-> pseudo-locales, layout bounds, show taps, animations), and dp measurements on any app, where Studio's
-> Layout Inspector needs a debuggable one. Compared with Studio, scrcpy and mobile-mcp: [docs/COMPARISON.md](docs/COMPARISON.md).
+## Why
 
-> 🤖 **Using Claude Code, Codex or Cursor?** The app ships an MCP server (18 tools) so your agent can
+Checking one screen before a pull request means the same chores every time: dark mode, a big font, a
+right-to-left language, TalkBack, a slow network. Each one is an `adb` command you look up again, or a
+setting three screens deep on the device. Oh My Android puts all of them in one panel next to the
+emulator, and every icon shows the device's real state.
+
+**Why not just Android Studio?** Studio's Device UI shortcuts already give one-click dark mode, font size,
+app language and TalkBack (API 33+). Use them when Studio is open. Oh My Android adds one always-visible panel
+for emulators *and* phones that works with Studio closed, toggles the shortcuts don't have (bold text,
+pseudo-locales, layout bounds, show taps, animations), and dp measurements on any app, where Studio's
+Layout Inspector needs a debuggable one. Compared with Studio, scrcpy and mobile-mcp: [docs/COMPARISON.md](docs/COMPARISON.md).
+
+> **Using Claude Code, Codex or Cursor?** The app ships an MCP server (18 tools) so your agent can
 > screenshot the emulator in dp, tap, and switch dark mode or RTL. [Set it up →](#ai-agents-mcp)
 
 <table align="center">
@@ -71,15 +78,15 @@ brew install --cask ateymoori/tap/oh-my-android
 
 | | What you get |
 |---|---|
-| 🎨 **Appearance** | Dark mode · Font size (0.85× → 2×) · Display size · Language and locale, incl. RTL and pseudo-locales · Rotate |
-| 📦 **Your app** (whatever is on screen) | Restart · Clear data · Open deep link · Install APK (or drag it onto the panel) · App info · Reset permissions · Force stop · Uninstall |
-| 📸 **Capture** | Screenshot saved and copied to the clipboard · Screen recording with audio · Quality presets |
-| 🌐 **Network** | Emulate LTE, HSDPA, 3G, EDGE, GPRS or GSM speed and latency · Airplane mode · Wi‑Fi · Mobile data |
-| 📐 **Layout & performance** | Layout Inspector · Show layout bounds · GPU overdraw · GPU profile bars · Show taps · Pointer location · Animations off (for Espresso / Maestro) · Developer options |
-| ♿ **Accessibility** | TalkBack on/off · Bold text · Invert colors · TalkBack order audit |
-| 🧭 **Navigation & input** | Back · Home · Recents · Type text into the focused field · Hide keyboard |
-| 🛰️ **Simulate** (emulator) | GPS location: city presets or latitude/longitude · Battery level · Charging · Fingerprint · Incoming call · Incoming SMS |
-| 💾 **Snapshots** (emulator) | Save a clean state and restore it in seconds |
+| **Appearance** | Dark mode · Font size (0.85× → 2×) · Display size · Language and locale, incl. RTL and pseudo-locales · Rotate |
+| **Your app** (whatever is on screen) | Restart · Clear data · Open deep link · Install APK (or drag it onto the panel) · App info · Reset permissions · Force stop · Uninstall |
+| **Capture** | Screenshot saved and copied to the clipboard · Screen recording with audio · Quality presets |
+| **Network** | Emulate LTE, HSDPA, 3G, EDGE, GPRS or GSM speed and latency · Airplane mode · Wi‑Fi · Mobile data |
+| **Layout & performance** | Layout Inspector · Show layout bounds · GPU overdraw · GPU profile bars · Show taps · Pointer location · Animations off (for Espresso / Maestro) · Developer options |
+| **Accessibility** | TalkBack on/off · Bold text · Invert colors · TalkBack order audit |
+| **Navigation & input** | Back · Home · Recents · Type text into the focused field · Hide keyboard |
+| **Simulate** (emulator) | GPS location: city presets or latitude/longitude · Battery level · Charging · Fingerprint · Incoming call · Incoming SMS |
+| **Snapshots** (emulator) | Save a clean state and restore it in seconds |
 
 Destructive actions (Clear data, Uninstall, Reset permissions) ask before they run.
 
@@ -102,16 +109,16 @@ Every icon replaces a command you would otherwise type or search for:
 
 | Task | The adb way | Oh My Android |
 |---|---|---|
-| Dark mode on the emulator | `adb shell cmd uimode night yes` | 🌙 one click |
+| Dark mode on the emulator | `adb shell cmd uimode night yes` | one click |
 | Bigger font size | `adb shell settings put system font_scale 1.3` | Aa − / + |
-| Change the device language | `adb shell cmd locale set-device-locale sv-SE` | 🌐 pick from a menu |
-| Test RTL layout | `adb shell cmd locale set-device-locale ar-EG` | 🌐 "العربية (RTL)" |
+| Change the device language | `adb shell cmd locale set-device-locale sv-SE` | pick from a menu |
+| Test RTL layout | `adb shell cmd locale set-device-locale ar-EG` | "العربية (RTL)" |
 | Slow network (3G / EDGE) | `adb emu network speed edge` + `adb emu network delay edge` | pick a profile |
 | Mock GPS location | `adb emu geo fix 18.0686 59.3293` | pick a city |
 | Turn off animations for UI tests | 3 × `adb shell settings put global …_scale 0` | one click |
 | Show layout bounds | `adb shell setprop debug.layout true` + a system refresh call | one click |
-| Clear app data | find the package, then `adb shell pm clear <package>` | 🗑 one click |
-| Take a screenshot | `adb exec-out screencap -p > shot.png` | 📷 saved and copied |
+| Clear app data | find the package, then `adb shell pm clear <package>` | one click |
+| Take a screenshot | `adb exec-out screencap -p > shot.png` | saved and copied |
 | Turn on TalkBack | `adb shell settings put secure enabled_accessibility_services …` | one click |
 | Open a deep link | `adb shell am start -a android.intent.action.VIEW -d "myapp://…"` | paste and open |
 
@@ -187,12 +194,12 @@ so your agent asks you first.
 
 | Group | Tools |
 |---|---|
-| 👀 See | `screenshot` (scaled to 1 px = 1 dp) · `get_ui` (compact UI tree with refs) · `accessibility_audit` |
-| 👆 Act | `tap` (by ref, text or x,y) · `swipe` · `type_text` · `press_key` |
-| 📱 Device | `list_devices` · `get_device_state` · `set_device_settings`: dark mode, font scale, display size, locale / RTL, orientation, TalkBack, animations, Wi‑Fi, airplane mode, network speed, GPS, battery |
-| 📦 Apps | `list_apps` · `open_app` (package or deep link, reports cold start time) · `manage_app` · `install_apk` · `logcat` |
-| 🗄️ Data | `read_preferences` · `query_database` (read-only SQL on a copy) |
-| 🧪 Emulator | `emulator_action`: fingerprint, incoming call, SMS, save / load snapshot |
+| See | `screenshot` (scaled to 1 px = 1 dp) · `get_ui` (compact UI tree with refs) · `accessibility_audit` |
+| Act | `tap` (by ref, text or x,y) · `swipe` · `type_text` · `press_key` |
+| Device | `list_devices` · `get_device_state` · `set_device_settings`: dark mode, font scale, display size, locale / RTL, orientation, TalkBack, animations, Wi‑Fi, airplane mode, network speed, GPS, battery |
+| Apps | `list_apps` · `open_app` (package or deep link, reports cold start time) · `manage_app` · `install_apk` · `logcat` |
+| Data | `read_preferences` · `query_database` (read-only SQL on a copy) |
+| Emulator | `emulator_action`: fingerprint, incoming call, SMS, save / load snapshot |
 
 Ready-made prompts: `accessibility_review`, `ui_matrix` (dark mode, large fonts, RTL, pseudo-locales)
 and `debug_crash`.
@@ -204,13 +211,14 @@ and `debug_crash`.
 - *"Audit the login screen for TalkBack and fix the problems in the code."*
 
 **Built for models:** every position is in dp, like your layout code. Output is compact text: a UI tree
-is about 10× smaller than the raw `uiautomator` XML, and all 18 tool definitions take about 3k tokens.
+is about 10× smaller than the raw `uiautomator` XML, and all 18 tool definitions fit in under 4k tokens
+(the `tools/list` reply is about 14.5 KB).
 The server supports MCP 2026-07-28 and the earlier versions (2024-11-05 to 2025-11-25) over stdio,
 has no dependencies, and needs no network.
 
 ## Privacy and security
 
-- 🔒 **No analytics, no telemetry, no account.** The only network request of its own is the update
+- **No analytics, no telemetry, no account.** The only network request of its own is the update
   check: once a day it reads a small feed from this repo's GitHub releases. It sends nothing about you or
   your devices. Turn it off in **Settings → Updates**.
 - Updates ([Sparkle](https://sparkle-project.org)) install only when you choose, and only if they are
@@ -274,13 +282,13 @@ the agent starts the server when it needs it.
 <details>
 <summary><b>How do I turn on dark mode on the Android Emulator?</b></summary>
 
-Click the 🌙 icon in the panel. The adb way is `adb shell cmd uimode night yes` (and `no` to turn it off).
+Click the moon icon in the panel. The adb way is `adb shell cmd uimode night yes` (and `no` to turn it off).
 </details>
 
 <details>
 <summary><b>How do I test RTL layouts on the Android Emulator?</b></summary>
 
-Pick "العربية (RTL)" or another RTL language from the 🌐 menu, or a pseudo-locale (`ar-XB`, `en-XA`) to
+Pick "العربية (RTL)" or another RTL language from the language menu, or a pseudo-locale (`ar-XB`, `en-XA`) to
 find hard-coded strings and mirroring bugs. The adb way is `adb shell cmd locale set-device-locale ar-EG`.
 </details>
 
@@ -321,6 +329,15 @@ Homebrew and GitHub releases are signed and notarized by Apple instead.
 <summary><b>Why macOS 26 or later?</b></summary>
 
 The panel uses Liquid Glass and other APIs that are new in macOS 26 Tahoe.
+</details>
+
+<details>
+<summary><b>How is it built? Did AI write it?</b></summary>
+
+It is a SwiftUI and AppKit app in Swift 6 with strict concurrency, about 6,600 lines, and one
+dependency (Sparkle, for updates). Most commits are co-authored with Claude Code, as the history shows.
+CI builds the app with warnings treated as errors and runs the MCP protocol test (`Scripts/test-mcp.py`)
+on every push and pull request.
 </details>
 
 ## Build from source
@@ -384,13 +401,8 @@ Adding a feature is one small Swift struct: see [CONTRIBUTING.md](CONTRIBUTING.m
 ---
 
 <p align="center">
-  <b>⭐ If Oh My Android saves you time, please star this repository.</b><br>
-  Stars help other Android developers find it and show that new features are worth building.<br>
+  If Oh My Android saves you time, a star helps other Android developers find it.<br>
   To get a notification for every new version, click <b>Watch → Custom → Releases</b>.
-</p>
-
-<p align="center">
-  <a href="https://github.com/ateymoori/oh-my-android/stargazers"><img src="https://img.shields.io/github/stars/ateymoori/oh-my-android?style=for-the-badge&logo=github&label=Star%20Oh%20My%20Android&color=3DDC84" alt="Star Oh My Android on GitHub"></a>
 </p>
 
 ## License

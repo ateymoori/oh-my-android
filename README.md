@@ -16,6 +16,7 @@
   <a href="https://androidweekly.net/issues/issue-747"><img src="https://img.shields.io/badge/Android%20Weekly-%23747-3DDC84" alt="Featured in Android Weekly #747"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <a href="https://github.com/ateymoori/oh-my-android/stargazers"><img src="https://img.shields.io/github/stars/ateymoori/oh-my-android?style=social" alt="GitHub stars"></a>
+  <a href="https://x.com/ReadmeRadar"><img src="https://img.shields.io/badge/follow-%40ReadmeRadar-000000?logo=x" alt="Follow @ReadmeRadar on X"></a>
 </p>
 
 <p align="center">

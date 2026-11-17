@@ -3,7 +3,7 @@
   "name": "io.github.ateymoori/oh-my-android",
   "title": "Oh My Android",
   "description": "AI agents see and drive the Android Emulator: screenshots, UI in dp, tap, dark mode, RTL, logcat.",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "websiteUrl": "https://royan.se/work/oh-my-android/",
   "repository": {
     "url": "https://github.com/ateymoori/oh-my-android",
@@ -12,8 +12,8 @@
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/ateymoori/oh-my-android/releases/download/v0.4.6/oh-my-android-0.4.6.mcpb",
-      "fileSha256": "39539e36bcd0c58919cdba66666645a786310dd6a906348b08ba6cfbf77ac024",
+      "identifier": "https://github.com/ateymoori/oh-my-android/releases/download/v0.4.7/oh-my-android-0.4.7.mcpb",
+      "fileSha256": "e9c1e66b1f46b5f6e0ec840ba98b3d7dd91604176423e5b08fa826420b7c00a4",
       "transport": {
         "type": "stdio"
       }

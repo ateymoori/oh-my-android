@@ -4,6 +4,8 @@
 #
 # One-time setup (asks for an app-specific password from appleid.apple.com):
 #   xcrun notarytool store-credentials ohmyandroid --apple-id <apple-id-email> --team-id <TEAM_ID>
+# Or, without a keychain profile, an App Store Connect API key file:
+#   NOTARY_KEY=~/.appstoreconnect/private_keys/AuthKey_<id>.p8 NOTARY_KEY_ID=<id> NOTARY_ISSUER=<issuer uuid>
 # Sparkle's private EdDSA key must be in the login Keychain (generate_keys; its public key is SUPublicEDKey).
 # Usage:
 #   TEAM_ID=<your team id> [NOTES=notes.md] Scripts/release.sh [--skip-notarize]
@@ -15,6 +17,11 @@ APP=OhMyAndroid              # project, scheme, zip name
 BUNDLE="Oh My Android.app"
 TEAM_ID=${TEAM_ID:?Set TEAM_ID to your Apple Developer team id}
 NOTARY_PROFILE=${NOTARY_PROFILE:-ohmyandroid}
+if [[ -n "${NOTARY_KEY:-}" ]]; then
+  NOTARY_AUTH=(--key "$NOTARY_KEY" --key-id "${NOTARY_KEY_ID:?Set NOTARY_KEY_ID}" --issuer "${NOTARY_ISSUER:?Set NOTARY_ISSUER}")
+else
+  NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
+fi
 REPO=${REPO:-ateymoori/oh-my-android}
 BUILD=build/DerivedData/Build/Products/Release
 SPARKLE_BIN=build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin
@@ -63,7 +70,7 @@ cp -R "$BUILD/$BUNDLE" dist/
 cd dist
 ditto -c -k --keepParent "$BUNDLE" "$ZIP"
 if [[ "${1:-}" != "--skip-notarize" ]]; then
-  xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+  xcrun notarytool submit "$ZIP" "${NOTARY_AUTH[@]}" --wait
   xcrun stapler staple "$BUNDLE"
   rm "$ZIP" && ditto -c -k --keepParent "$BUNDLE" "$ZIP"   # re-zip with the ticket stapled
   spctl -a -vv "$BUNDLE"

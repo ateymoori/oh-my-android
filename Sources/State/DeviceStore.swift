@@ -10,9 +10,8 @@ final class DeviceStore {
     private(set) var devices: [Device] = []
     /// Last adb failure, shown when the list is empty.
     private(set) var lastError: String?
-    var selected: Device? {
-        didSet { if let serial = selected?.serial { UserDefaults.standard.set(serial, forKey: Self.lastSerialKey) } }
-    }
+    /// Set by `select` (the user) or by `refresh` (automatic). Only the user's choice is remembered.
+    private(set) var selected: Device?
     private static let lastSerialKey = AgentSettings.panelDeviceKey
     private static let recoveryInterval: Duration = .seconds(4)
 
@@ -20,6 +19,8 @@ final class DeviceStore {
     private let tracker: DeviceTracking
     private var trackingTask: Task<Void, Never>?
     private var recoveryTask: Task<Void, Never>?
+    /// Refreshes can overlap (tracker, recovery loop, restart); only the newest one's list is applied.
+    private var generation = 0
 
     init(adb: ADBClient, tracker: DeviceTracking) {
         self.adb = adb
@@ -31,6 +32,7 @@ final class DeviceStore {
         trackingTask?.cancel()
         trackingTask = Task { [weak self, tracker] in
             await startServer()
+            await self?.refresh()  // also when the tracker cannot connect: shows the adb error
             for await _ in tracker.events() {
                 guard let self, !Task.isCancelled else { return }
                 await self.refresh()
@@ -45,12 +47,23 @@ final class DeviceStore {
         tracker.stop()
     }
 
+    /// The user's choice: it becomes the device the panel returns to and the MCP server's default.
+    func select(_ device: Device) {
+        selected = device
+        UserDefaults.standard.set(device.serial, forKey: Self.lastSerialKey)
+    }
+
     func refresh() async {
-        do {
-            let list = try await adb.devices()
+        generation += 1
+        let current = generation
+        let result: Result<[Device], any Error>
+        do { result = .success(try await adb.devices()) } catch { result = .failure(error) }
+        guard current == generation else { return }  // a newer refresh started meanwhile; its list wins
+        switch result {
+        case .success(let list):
             lastError = nil
             if list != devices { devices = list }
-        } catch {
+        case .failure(let error):
             lastError = error.localizedDescription
             devices = []
         }
@@ -60,6 +73,8 @@ final class DeviceStore {
             // Come back to the device used last time; otherwise the first one that is ready.
             let last = UserDefaults.standard.string(forKey: Self.lastSerialKey)
             selected = devices.first { $0.isReady && $0.serial == last } ?? devices.first { $0.isReady }
+            // First run: remember the automatic choice, so the MCP server has a default too.
+            if last == nil, let serial = selected?.serial { UserDefaults.standard.set(serial, forKey: Self.lastSerialKey) }
         }
         updateRecovery()
     }

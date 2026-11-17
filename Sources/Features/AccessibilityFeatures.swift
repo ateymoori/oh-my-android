@@ -13,13 +13,15 @@ struct TalkBackFeature: ToggleFeature, BatchReadable {
         .toggle($0.lowercased().contains("talkback"))
     }
 
+    /// Adds or removes only TalkBack: other services (password managers, Switch Access) stay on.
     func setOn(_ on: Bool, _ context: DeviceContext) async throws {
+        let key = "enabled_accessibility_services"
+        let others = "settings get secure \(key) | tr ':' '\\n' | grep -v -i -e talkback -e '^null$' -e '^$' | tr '\\n' ':' | sed 's/:$//'"
         if on {
-            try await context.putSetting("secure", "enabled_accessibility_services", Self.service)
-            try await context.putSetting("secure", "accessibility_enabled", "1")
+            try await context.shell("s=$(\(others)); settings put secure \(key) \"${s:+$s:}\(Self.service)\"; settings put secure accessibility_enabled 1")
         } else {
-            try await context.shell("settings delete secure enabled_accessibility_services")
-            try await context.putSetting("secure", "accessibility_enabled", "0")
+            try await context.shell("s=$(\(others)); if [ -n \"$s\" ]; then settings put secure \(key) \"$s\"; "
+                + "else settings delete secure \(key) >/dev/null; settings put secure accessibility_enabled 0; fi")
         }
     }
 }

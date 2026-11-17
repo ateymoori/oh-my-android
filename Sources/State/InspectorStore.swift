@@ -91,17 +91,23 @@ final class InspectorStore {
             await load { [reader] in
                 var pulled: [String: URL] = [:]
                 var entries: [DatabaseEntry] = []
-                do {
-                    for file in try await reader.databaseFiles(of: package, on: context.device, adb: context.adb) {
+                var skipped: [String] = []
+                // One file that is not SQLite (or fails to copy) must not hide the others.
+                for file in try await reader.databaseFiles(of: package, on: context.device, adb: context.adb) {
+                    do {
                         let url = try await reader.pullDatabase(of: package, name: file, on: context.device, adb: context.adb)
                         pulled[file] = url
                         entries.append(DatabaseEntry(file: file, tables: try await Task.detached { try SQLiteSnapshot.tables(at: url) }.value))
+                    } catch is CancellationError {
+                        Self.remove(pulled)
+                        return
+                    } catch {
+                        if let url = pulled.removeValue(forKey: file) { Self.remove([file: url]) }
+                        skipped.append("\(file): \(error.localizedDescription)")
                     }
-                } catch {
-                    Self.remove(pulled)
-                    throw error
                 }
                 guard isCurrent() else { return Self.remove(pulled) }
+                if !skipped.isEmpty { self.error = "Skipped " + skipped.joined(separator: "; ") }
                 self.discardLocalDatabases()
                 self.localDatabases = pulled
                 self.databases = entries

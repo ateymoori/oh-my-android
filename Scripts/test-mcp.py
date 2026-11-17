@@ -20,8 +20,9 @@ def check(condition, message):
 
 
 def session(server, messages):
-    """Sends all messages, closes stdin, returns responses by id. The server must answer before exiting."""
-    lines = "".join(json.dumps(m) + "\n" for m in messages)
+    """Sends all messages, closes stdin, returns responses by id. The server must answer before exiting.
+    A str message is sent as the raw line."""
+    lines = "".join((m if isinstance(m, str) else json.dumps(m)) + "\n" for m in messages)
     out = subprocess.run([server], input=lines, capture_output=True, text=True, timeout=30).stdout
     responses = {}
     for line in out.splitlines():
@@ -91,6 +92,7 @@ def main(server):
     check(modern["v"]["error"]["code"] == -32022, "unsupported version error")
     check(modern["v"]["error"]["data"]["requested"] == "1999-01-01", "unsupported version names the request")
     check(modern[None]["error"]["code"] == -32700, "parse error")
+    check(session(server, ['"a string"'])[None]["error"]["code"] == -32600, "JSON that is not an object is an invalid request")
 
     help_text = subprocess.run([server, "--help"], capture_output=True, text=True, timeout=10).stdout
     check("claude mcp add" in help_text, "--help shows setup")

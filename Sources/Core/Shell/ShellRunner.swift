@@ -22,19 +22,31 @@ struct ShellError: LocalizedError {
 
 /// Abstraction over process execution so services stay testable and swappable.
 protocol ShellRunning: Sendable {
-    func run(_ executable: URL, arguments: [String]) async throws -> ShellResult
-    func runData(_ executable: URL, arguments: [String]) async throws -> Data
+    /// `timeout` nil: the runner's default.
+    func run(_ executable: URL, arguments: [String], timeout: Duration?) async throws -> ShellResult
+    func runData(_ executable: URL, arguments: [String], timeout: Duration?) async throws -> Data
+}
+
+extension ShellRunning {
+    func run(_ executable: URL, arguments: [String]) async throws -> ShellResult {
+        try await run(executable, arguments: arguments, timeout: nil)
+    }
+
+    func runData(_ executable: URL, arguments: [String]) async throws -> Data {
+        try await runData(executable, arguments: arguments, timeout: nil)
+    }
 }
 
 /// Runs executables with `Process` without blocking any thread: pipes drain through a dispatch source
 /// and completion arrives through the termination handler. Cancelling the calling task, or the
 /// timeout, terminates the process.
 struct ProcessShellRunner: ShellRunning {
-    /// Upper bound for one command. adb answers in milliseconds; anything longer is a hung server.
+    /// Default upper bound for one command. Most adb calls answer in milliseconds; anything longer is
+    /// a hung server. Calls that copy files or memory images pass a longer timeout.
     var timeout: Duration = .seconds(60)
 
-    func run(_ executable: URL, arguments: [String]) async throws -> ShellResult {
-        let output = try await launch(executable, arguments: arguments)
+    func run(_ executable: URL, arguments: [String], timeout: Duration?) async throws -> ShellResult {
+        let output = try await launch(executable, arguments: arguments, timeout: timeout ?? self.timeout)
         return ShellResult(
             stdout: String(decoding: output.stdout, as: UTF8.self),
             stderr: String(decoding: output.stderr, as: UTF8.self),
@@ -42,8 +54,8 @@ struct ProcessShellRunner: ShellRunning {
         )
     }
 
-    func runData(_ executable: URL, arguments: [String]) async throws -> Data {
-        let output = try await launch(executable, arguments: arguments)
+    func runData(_ executable: URL, arguments: [String], timeout: Duration?) async throws -> Data {
+        let output = try await launch(executable, arguments: arguments, timeout: timeout ?? self.timeout)
         guard output.status == 0 else {
             throw ShellError(
                 command: Self.describe(executable, arguments),
@@ -68,7 +80,7 @@ struct ProcessShellRunner: ShellRunning {
 
     private struct Output: Sendable { let stdout: Data; let stderr: Data; let status: Int32 }
 
-    private func launch(_ executable: URL, arguments: [String]) async throws -> Output {
+    private func launch(_ executable: URL, arguments: [String], timeout: Duration) async throws -> Output {
         try Task.checkCancellation()
         let process = Process()
         process.executableURL = executable

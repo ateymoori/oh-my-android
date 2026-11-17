@@ -30,7 +30,7 @@ enum InputTools {
         title: "Swipe",
         description: """
         Swipe (finger moves in direction): up scrolls down the page, left goes to the next page. \
-        Starts at the center of ref, or at x,y in dp, or in the middle of the screen.
+        Centered on ref or on the screen; starts at x,y (dp) when given.
         """,
         effect: .control,
         parameters: [
@@ -163,10 +163,12 @@ private extension ToolCall {
     /// Screen frame in dp and density, from `wm` (cheap, and current even after a rotation since the
     /// last UI tree). The physical size is swapped when the screen is rotated.
     private func screenMetrics(_ context: DeviceContext) async throws -> (frame: CGRect, density: Double) {
-        let output = try await context.shell("wm density; dumpsys input | grep -m1 SurfaceOrientation; wm size")
+        // `wm size` is the portrait size. The rotation comes from the window manager: `dumpsys input`
+        // stopped printing SurfaceOrientation in recent Android versions.
+        let output = try await context.shell("wm density; dumpsys window displays | grep -m1 -oE 'mRotation=[0-3]'; wm size")
         guard let density = WindowManagerOutput.effectiveDensity(output).map(Double.init), density > 0,
               var size = WindowManagerOutput.effectiveSize(output) else { throw AppError("Could not read the screen size.") }
-        if let rotation = output.firstMatch(of: /SurfaceOrientation: (\d)/).flatMap({ Int($0.1) }), rotation % 2 == 1 {
+        if let rotation = output.firstMatch(of: /mRotation=(\d)/).flatMap({ Int($0.1) }), rotation % 2 == 1 {
             size = CGSize(width: size.height, height: size.width)
         }
         return (CGRect(x: 0, y: 0, width: size.width * 160 / density, height: size.height * 160 / density), density)

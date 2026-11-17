@@ -96,6 +96,8 @@ final class LayoutInspectorStore {
             self.error = error.localizedDescription
         }
         isLoading = false
+        // Opened for another device while this capture ran: show that device, not this one.
+        if self.context?.device.serial != context.device.serial { await capture() }
     }
 
     func hover(at pixel: CGPoint?) {

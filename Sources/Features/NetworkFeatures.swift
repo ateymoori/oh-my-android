@@ -57,7 +57,8 @@ struct WifiFeature: ToggleFeature, BatchReadable {
     let symbol = "wifi"
     let category = FeatureCategory.network
 
-    let read = DeviceRead(command: "settings get global wifi_on") { .toggle($0.trimmed != "0") }
+    /// 1 on, 2 on during airplane mode; 0 off, 3 off by airplane mode.
+    let read = DeviceRead(command: "settings get global wifi_on") { .toggle(["1", "2"].contains($0.trimmed)) }
 
     func setOn(_ on: Bool, _ context: DeviceContext) async throws {
         try await context.shell("svc wifi \(on ? "enable" : "disable")")

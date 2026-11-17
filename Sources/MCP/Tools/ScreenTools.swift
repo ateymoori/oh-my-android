@@ -41,7 +41,7 @@ enum ScreenTools {
         effect: .read,
         parameters: [
             .string("query", "Only elements whose text, description or resource id contains this (case-insensitive)."),
-            .boolean("interactive_only", "Only elements that take input: tappable, checkable, scrollable, text fields."),
+            .boolean("interactive_only", "Only elements that take input: tappable, checkable, scrollable, text fields. Ignored with query."),
             .number("wait_seconds", "With query: wait up to this long for a match to appear.", range: 0...30),
         ]
     ) { call in

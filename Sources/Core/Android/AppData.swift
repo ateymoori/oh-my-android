@@ -35,7 +35,8 @@ extension AppDataReading {
 struct RunAsAppDataReader: AppDataReading {
     func installedApps(on device: Device, adb: ADBClient) async throws -> [InstalledApp] {
         let script = "for p in $(pm list packages -3 | cut -d: -f2); do if run-as $p true >/dev/null 2>&1; then echo \"$p 1\"; else echo \"$p 0\"; fi; done"
-        return try await adb.shell(device, script).split(whereSeparator: \.isNewline)
+        // One run-as per app: a phone with hundreds of apps needs more than the default timeout.
+        return try await adb.shell(device, script, timeout: .seconds(300)).split(whereSeparator: \.isNewline)
             .compactMap { line in
                 let parts = line.split(separator: " ")
                 return parts.first.map { InstalledApp(package: String($0), isDebuggable: parts.last == "1") }
@@ -78,14 +79,16 @@ struct RunAsAppDataReader: AppDataReading {
         }
     }
 
-    /// A failed `cat` can print its error to stdout; only keep real side files (WAL magic 0x377f068x, SHM header).
+    /// A failed `cat` can print its error to stdout; only keep real side files: WAL magic 0x377f068x,
+    /// SHM header version 3007000 (little-endian 18 E2 2D 00).
     private static func looksLikeSQLiteSideFile(_ data: Data, suffix: String) -> Bool {
         guard data.count >= 32 else { return false }
-        return suffix == "-wal" ? data.prefix(3) == Data([0x37, 0x7f, 0x06]) : true
+        return data.prefix(suffix == "-wal" ? 3 : 4) == Data(suffix == "-wal" ? [0x37, 0x7f, 0x06] : [0x18, 0xE2, 0x2D, 0x00])
     }
 
     private func list(_ directory: String, of package: String, on device: Device, adb: ADBClient) async throws -> [String] {
-        let output = (try? await adb.shell(device, "run-as \(package.shellQuoted) ls -1 \(directory) 2>/dev/null")) ?? ""
+        // A missing directory is normal (no databases yet); adb or run-as failing is an error to show.
+        let output = try await adb.shell(device, "run-as \(package.shellQuoted) ls -1 \(directory) 2>/dev/null || true")
         return output.split(whereSeparator: \.isNewline).map { String($0).trimmed }.filter { !$0.isEmpty }.sorted()
     }
 }

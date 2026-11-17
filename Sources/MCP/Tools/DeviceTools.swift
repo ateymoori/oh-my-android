@@ -57,6 +57,8 @@ enum DeviceTools {
         let context = try await call.device()
         let requested = DeviceSettings.all.filter { call.arguments.has($0.key) }
         guard !requested.isEmpty else { throw ToolInputError("Pass at least one setting.") }
+        // Check every value before changing anything: one bad value must not leave the others half applied.
+        for setting in requested { try setting.check(call.arguments) }
         var failures: [String] = []
         for setting in requested {
             if setting.emulatorOnly, !context.device.isEmulator {
@@ -80,7 +82,19 @@ struct DeviceSetting: Sendable {
     /// Read in the shared batch; nil for emulator console settings.
     var read: DeviceRead?
     var emulatorOnly = false
+    /// Checks beyond type, range and allowed values.
+    var validate: (@Sendable (Arguments) throws -> Void)? = nil
     let apply: @Sendable (Arguments, DeviceContext) async throws -> Void
+
+    func check(_ arguments: Arguments) throws {
+        switch parameter.kind {
+        case .string: _ = try arguments.requiredString(key)
+        case .number: _ = try arguments.requiredDouble(key)
+        case .integer: _ = try arguments.requiredInt(key)
+        case .boolean: _ = try arguments.requiredBool(key)
+        }
+        try validate?(arguments)
+    }
 }
 
 enum DeviceSettings {
@@ -104,11 +118,14 @@ enum DeviceSettings {
         },
         DeviceSetting(
             key: "locale", parameter: .string("locale", "BCP 47 locale, e.g. en-US, sv-SE; ar-EG for RTL; en-XA (long text) and ar-XB (RTL) pseudo-locales."),
-            read: DeviceLanguageFeature().read
+            read: DeviceLanguageFeature().read,
+            validate: { arguments in
+                guard try arguments.requiredString("locale").wholeMatch(of: /[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})*/) != nil else {
+                    throw ToolInputError("locale must look like en-US.")
+                }
+            }
         ) { arguments, context in
-            let locale = try arguments.requiredString("locale")
-            guard locale.wholeMatch(of: /[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})*/) != nil else { throw ToolInputError("locale must look like en-US.") }
-            try await DeviceLanguageFeature().select(locale, context)
+            try await DeviceLanguageFeature().select(try arguments.requiredString("locale"), context)
         },
         DeviceSetting(
             key: "orientation", parameter: .string("orientation", "Screen rotation lock, or auto.", oneOf: ["portrait", "landscape", "auto"]),

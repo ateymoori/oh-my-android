@@ -74,7 +74,14 @@ enum SQLiteSnapshot {
         "\"" + identifier.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
+    /// Upper bound for one call. A runaway query (an endless recursive CTE) cannot be cancelled from
+    /// Swift, so SQLite's progress handler stops it.
+    static let timeLimit: TimeInterval = 15
+
     private static func withDatabase<T>(_ url: URL, _ body: (OpaquePointer) throws -> T) throws -> T {
+        let deadline = UnsafeMutablePointer<Double>.allocate(capacity: 1)
+        deadline.initialize(to: Date.timeIntervalSinceReferenceDate + timeLimit)
+        defer { deadline.deallocate() }
         var handle: OpaquePointer?
         guard sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK, let db = handle else {
             let message = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "cannot open"
@@ -84,6 +91,11 @@ enum SQLiteSnapshot {
         defer { sqlite3_close(db) }
         // ATTACH counts as read-only to SQLite, but it would open other files on this Mac: allow none.
         sqlite3_limit(db, SQLITE_LIMIT_ATTACHED, 0)
+        sqlite3_progress_handler(db, 10_000, { argument in
+            guard let argument else { return 0 }
+            return Date.timeIntervalSinceReferenceDate > argument.assumingMemoryBound(to: Double.self).pointee ? 1 : 0
+        }, deadline)
+        defer { sqlite3_progress_handler(db, 0, nil, nil) }
         return try body(db)
     }
 
@@ -97,7 +109,8 @@ enum SQLiteSnapshot {
             guard sqlite3_prepare_v2(db, text, -1, &statement, &tail) == SQLITE_OK else { return nil }
             return tail.map { String(cString: $0) } ?? ""
         }
-        guard let remainder, let statement else { throw AppError("SQLite: \(String(cString: sqlite3_errmsg(db)))") }
+        guard let remainder else { throw error(db) }
+        guard let statement else { throw AppError("Nothing to run: the SQL has no statement.") }
         defer { sqlite3_finalize(statement) }
         if readOnly {
             guard sqlite3_stmt_readonly(statement) != 0 else { throw AppError("Only statements that read are allowed (SELECT, PRAGMA, WITH).") }
@@ -113,7 +126,7 @@ enum SQLiteSnapshot {
             let step = sqlite3_step(statement)
             if step == SQLITE_DONE { break }
             // A failing step (bad row, refused ATTACH) is an error, not an empty result.
-            guard step == SQLITE_ROW else { throw AppError("SQLite: \(String(cString: sqlite3_errmsg(db)))") }
+            guard step == SQLITE_ROW else { throw error(db) }
             guard rows.count < limit else { truncated = true; break }
             let cells = (0..<count).map { column -> String in
                 let index = Int32(column)
@@ -128,5 +141,11 @@ enum SQLiteSnapshot {
             rows.append(TableRow(id: rows.count, cells: cells))
         }
         return (columns, rows, truncated)
+    }
+
+    private static func error(_ db: OpaquePointer) -> AppError {
+        sqlite3_errcode(db) == SQLITE_INTERRUPT
+            ? AppError("SQLite: stopped after \(Int(timeLimit)) s. Add a LIMIT or a narrower WHERE.")
+            : AppError("SQLite: \(String(cString: sqlite3_errmsg(db)))")
     }
 }

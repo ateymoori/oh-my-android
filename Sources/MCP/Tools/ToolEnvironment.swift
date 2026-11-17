@@ -60,14 +60,14 @@ final class ToolEnvironment: Sendable {
     }
 }
 
-/// Starts the adb server at most once per process.
+/// Starts the adb server at most once per process. Concurrent first calls all wait for that one start:
+/// a piped adb call made while the server is still starting would spawn it and hang on the pipe.
 private actor ADBServerStarter {
-    private var started = false
+    private var startup: Task<Void, Never>?
 
     func start(_ adb: AndroidDebugBridge) async {
-        guard !started else { return }
-        started = true
-        await adb.startServer()
+        if startup == nil { startup = Task { await adb.startServer() } }
+        await startup?.value
     }
 }
 

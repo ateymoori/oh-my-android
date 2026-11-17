@@ -59,9 +59,12 @@ final class ADBDeviceTracker: DeviceTracking {
         guard !isStopped else { return }
         guard let handle = Self.openTrackingSocket(port: port) else { return retryLater() }
         handle.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
+            // read(2), not availableData: that raises an Objective-C exception on a reset connection.
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            let count = read(handle.fileDescriptor, &buffer, buffer.count)
             guard let self else { return }
-            if data.isEmpty {
+            if count < 0, errno == EAGAIN || errno == EINTR { return }
+            if count <= 0 {
                 // adb server stopped (adb kill-server, Android Studio restart): start it again and reconnect.
                 handle.readabilityHandler = nil
                 retryLater()
@@ -72,7 +75,15 @@ final class ADBDeviceTracker: DeviceTracking {
                 }?.yield()
             }
         }
-        state.withLock { $0.connection = handle }
+        // stop() may have run since the check above: then close this socket instead of keeping it.
+        let stopped = state.withLock { state in
+            if !state.stopped { state.connection = handle }
+            return state.stopped
+        }
+        if stopped {
+            handle.readabilityHandler = nil
+            try? handle.close()
+        }
     }
 
     /// Starts the adb server, then reconnects. Waits 2 s, doubling up to a minute while it keeps failing.

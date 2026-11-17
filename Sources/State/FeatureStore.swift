@@ -86,7 +86,8 @@ final class FeatureStore {
 
     func step(_ feature: any StepperFeature, by delta: Int, _ context: DeviceContext) {
         let current = if case .number(let value) = values[feature.id] { value } else { 1.0 }
-        let index = feature.steps.firstIndex { $0 >= current - 0.0001 } ?? 0
+        // A value above the last step (set outside the app) counts as the last step.
+        let index = feature.steps.firstIndex { $0 >= current - 0.0001 } ?? feature.steps.count - 1
         let target = min(max(index + delta, 0), feature.steps.count - 1)
         setNumber(feature, feature.steps[target], context)
     }

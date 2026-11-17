@@ -39,7 +39,7 @@ enum AppTools {
         if let url = try call.arguments.string("url"), !url.isEmpty {
             let package = call.arguments.has("package") ? " -p " + (try await call.package(context)) : ""
             let output = try await context.shell("am start -W -a android.intent.action.VIEW -d \(url.shellQuoted)\(package)")
-            if output.contains("Error") { throw AppError(output.trimmed) }
+            try AppCommands.checkStart(output)
             return .text("Opened \(url). " + launchSummary(output))
         }
         guard call.arguments.has("package") else { throw ToolInputError("Give package or url.") }
@@ -48,7 +48,7 @@ enum AppTools {
         let activity = try await context.shell("cmd package resolve-activity --brief -c android.intent.category.LAUNCHER \(package) | tail -n 1").trimmed
         guard activity.contains("/") else { throw AppError("\(package) has no launcher activity, or is not installed.") }
         let output = try await context.shell("am start -W -n \(activity.shellQuoted)")
-        if output.contains("Error") { throw AppError(output.trimmed) }
+        try AppCommands.checkStart(output)
         return .text("Launched \(activity). " + launchSummary(output))
     }
 
@@ -68,22 +68,26 @@ enum AppTools {
     static let manageApp = Tool(
         name: "manage_app",
         title: "Manage app",
-        description: "Force-stop, clear data, reset/grant/revoke permissions, or uninstall. Default: the app on screen.",
+        description: "Force-stop, clear data, reset/grant/revoke permissions, or uninstall. clear_data, reset_permissions and uninstall need package.",
         effect: .destructive,
         parameters: [
             .string("action", "What to do.", required: true, oneOf: manageActions),
-            .string("package", "Target app. Default: the app on screen."),
+            .string("package", "Target app. Default for force_stop and grant/revoke: the app on screen."),
             .string("permission", "For grant/revoke, e.g. android.permission.CAMERA."),
         ]
     ) { call in
         let context = try await call.device()
         let action = try call.arguments.requiredString("action")
+        // Data loss: never guess the target. On the home screen the app "on screen" is the launcher.
+        if ["clear_data", "reset_permissions", "uninstall"].contains(action), !call.arguments.has("package") {
+            throw ToolInputError("\(action) needs package (list_apps shows them).")
+        }
         let package = try await call.package(context)
         let command: String
         switch action {
         case "force_stop": command = "am force-stop \(package)"
         case "clear_data": command = "pm clear \(package)"
-        case "reset_permissions": command = "pm reset-permissions -p \(package)"
+        case "reset_permissions": command = AppCommands.resetPermissions(package)
         case "uninstall": command = "pm uninstall \(package)"
         default:
             let permission = try call.arguments.requiredString("permission")
@@ -92,6 +96,7 @@ enum AppTools {
         }
         let output = try await context.shell(command + " 2>&1").trimmed
         if output.localizedCaseInsensitiveContains("fail") || output.contains("Exception") { throw AppError(output) }
+        if action == "reset_permissions" { return .text("reset_permissions \(package): \(output) runtime permissions reset.") }
         return .text("\(action) \(package): \(output.isEmpty ? "done" : output)")
     }
 

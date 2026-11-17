@@ -76,7 +76,7 @@ private struct PreferencesPane: View {
                     Text(entry.value).textSelection(.enabled).help(entry.value)
                 }
             }
-            .overlay { if entries.isEmpty { ContentUnavailableView.search(text: search) } }
+            .overlay { if entries.isEmpty, !search.isEmpty { ContentUnavailableView.search(text: search) } }
         }
         .searchable(text: $search, placement: .toolbar, prompt: "Filter keys and values")
     }

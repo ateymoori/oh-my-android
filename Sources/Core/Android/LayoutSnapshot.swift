@@ -97,7 +97,8 @@ struct UIAutomatorSnapshotReader: LayoutSnapshotReading {
     /// uiautomator refuses while the screen animates; one retry covers the usual case.
     private func dumpHierarchy(on device: Device, adb: ADBClient) async throws -> Data {
         // /data/local/tmp belongs to the shell user: not visible to apps or in the user's files, and removed after.
-        let file = "/data/local/tmp/ohmyandroid_ui.xml"
+        // One file per call: the app and several MCP servers can dump at the same time.
+        let file = "/data/local/tmp/ohmyandroid_ui_\(UUID().uuidString.prefix(8)).xml"
         let command = "uiautomator dump \(file) >/dev/null 2>&1 && cat \(file); rm -f \(file)"
         for attempt in 0..<2 {
             let data = try await adb.execOut(device, command)

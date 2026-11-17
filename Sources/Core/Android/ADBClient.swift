@@ -9,13 +9,22 @@ protocol ADBClient: Sendable {
     @discardableResult func console(_ device: Device, _ arguments: [String]) async throws -> String
     /// Runs a shell command and returns raw stdout bytes (for screenshots).
     func execOut(_ device: Device, _ command: String) async throws -> Data
-    /// Runs any adb sub-command against the device.
-    @discardableResult func run(_ device: Device, _ arguments: [String]) async throws -> String
+    /// Runs any adb sub-command against the device. `timeout` nil: the default for quick commands.
+    @discardableResult func run(_ device: Device, _ arguments: [String], timeout: Duration?) async throws -> String
     /// Kills and restarts the adb server — the manual fix for devices stuck offline.
     func restartServer() async throws
 }
 
 extension ADBClient {
+    @discardableResult func run(_ device: Device, _ arguments: [String]) async throws -> String {
+        try await run(device, arguments, timeout: nil)
+    }
+
+    /// Shell command that can legitimately take long (a loop over all apps).
+    @discardableResult func shell(_ device: Device, _ command: String, timeout: Duration) async throws -> String {
+        try await run(device, ["shell", command], timeout: timeout)
+    }
+
     /// PNG of the screen. On devices with several displays (foldables) `screencap` prints a warning
     /// before the image on the same stream; everything before the PNG signature is dropped.
     func screenshot(_ device: Device) async throws -> Data {
@@ -65,8 +74,15 @@ struct AndroidDebugBridge: ADBClient {
         try await run(device, ["shell", command])
     }
 
+    /// `adb emu` sends its arguments as one console line. A line break inside an argument would start
+    /// a second console command (`kill`, `avd snapshot delete`), so control characters are refused.
     func console(_ device: Device, _ arguments: [String]) async throws -> String {
-        let output = try await run(device, ["emu"] + arguments)
+        guard !arguments.contains(where: { $0.unicodeScalars.contains { CharacterSet.controlCharacters.contains($0) } }) else {
+            throw AppError("Emulator console text cannot contain line breaks or other control characters.")
+        }
+        // Saving or loading a snapshot copies the emulator's memory: seconds to minutes on a large AVD.
+        let isSnapshot = arguments.starts(with: ["avd", "snapshot"])
+        let output = try await run(device, ["emu"] + arguments, timeout: isSnapshot ? .seconds(600) : nil)
         if output.contains("KO:") { throw AppError(output.trimmed) }
         return output
     }
@@ -75,8 +91,8 @@ struct AndroidDebugBridge: ADBClient {
         try await runner.runData(sdk.adb, arguments: ["-s", device.serial, "exec-out", command])
     }
 
-    func run(_ device: Device, _ arguments: [String]) async throws -> String {
-        try await execute(["-s", device.serial] + arguments)
+    func run(_ device: Device, _ arguments: [String], timeout: Duration?) async throws -> String {
+        try await execute(["-s", device.serial] + arguments, timeout: timeout)
     }
 
     func restartServer() async throws {
@@ -85,8 +101,8 @@ struct AndroidDebugBridge: ADBClient {
         await startServer()
     }
 
-    private func execute(_ arguments: [String]) async throws -> String {
-        let result = try await runner.run(sdk.adb, arguments: arguments)
+    private func execute(_ arguments: [String], timeout: Duration? = nil) async throws -> String {
+        let result = try await runner.run(sdk.adb, arguments: arguments, timeout: timeout)
         guard result.isSuccess else {
             throw ShellError(command: "adb " + arguments.joined(separator: " "), result: result)
         }

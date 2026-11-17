@@ -36,8 +36,13 @@ actor MCPServer {
     // MARK: - Messages
 
     func receive(_ line: Data) async {
-        guard let message = try? JSONDecoder().decode(JSONValue.self, from: line), let object = message.object else {
+        guard let message = try? JSONDecoder().decode(JSONValue.self, from: line) else {
             await output.send(Self.errorResponse(id: .null, RPCError(code: -32700, message: "Parse error")))
+            return
+        }
+        // Valid JSON that is not one request object (a string, a batch array) is an invalid request.
+        guard let object = message.object else {
+            await output.send(Self.errorResponse(id: .null, RPCError(code: -32600, message: "Invalid request")))
             return
         }
         guard let method = object["method"]?.string else { return }  // a response; this server sends no requests
@@ -45,6 +50,11 @@ actor MCPServer {
         guard let id = object["id"], id != .null else { return notification(method, params) }
         guard id.string != nil || id.double != nil else {
             await output.send(Self.errorResponse(id: .null, RPCError(code: -32600, message: "Invalid request id")))
+            return
+        }
+        // A second request with an id still in flight would replace the first and lose one answer.
+        guard running[id] == nil else {
+            await output.send(Self.errorResponse(id: id, RPCError(code: -32600, message: "Request id already in use")))
             return
         }
         running[id] = Task { await self.respond(id: id, method: method, params: params) }
@@ -145,6 +155,7 @@ actor MCPServer {
         let arguments = Arguments(values: params["arguments"]?.object ?? [:], parameters: tool.allParameters)
         let call = ToolCall(arguments: arguments, environment: environment)
         do {
+            try arguments.rejectUnknown()
             return try await tool.run(call).json
         } catch {
             // Tool failures go back as results, so the model sees them and can correct itself.

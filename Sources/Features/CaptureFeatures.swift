@@ -73,8 +73,11 @@ struct ScreenRecordFeature: ToggleFeature {
             try await context.adb.console(context.device, ["screenrecord", "start"] + quality.arguments(for: resolution) + [temporary.path])
             await recorder.start(context.device.serial, file: temporary)
         } else {
-            try await context.console("screenrecord", "stop")
-            guard let temporary = await recorder.stop(context.device.serial) else { return }
+            let temporary = await recorder.stop(context.device.serial)
+            // The recording also ends by itself (3 min limit, emulator restart); the console then answers KO.
+            // Clear the state and keep the file in either case.
+            _ = try? await context.console("screenrecord", "stop")
+            guard let temporary, FileManager.default.fileExists(atPath: temporary.path) else { return }
             try await Self.moveWhenFinished(temporary, to: try CaptureLocation.file("Recording", "webm"))
         }
     }

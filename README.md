@@ -205,7 +205,7 @@ and `debug_crash`.
 - *"Audit the login screen for TalkBack and fix the problems in the code."*
 
 **Built for models:** every position is in dp, like your layout code. Output is compact text: a UI tree
-is about 10× smaller than the raw `uiautomator` XML, and all 18 tool definitions take about 3k tokens.
+is about 10× smaller than the raw `uiautomator` XML, and all 18 tool definitions take under 4k tokens.
 The server supports MCP 2026-07-28 and the earlier versions (2024-11-05 to 2025-11-25) over stdio,
 has no dependencies, and needs no network.
 

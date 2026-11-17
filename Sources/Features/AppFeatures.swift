@@ -12,8 +12,29 @@ struct DeepLinkFeature: TextActionFeature {
         let url = text.trimmed
         guard !url.isEmpty else { throw AppError("Enter a URL.") }
         let output = try await context.shell("am start -W -a android.intent.action.VIEW -d \(url.shellQuoted)")
-        if output.contains("Error") { throw AppError(output.trimmed) }
+        try AppCommands.checkStart(output)
         return nil
+    }
+}
+
+/// Package commands shared by the panel and the MCP server. Packages are already quoted or validated.
+enum AppCommands {
+    /// `pm reset-permissions` ignores `-p` and resets every app on the device. This revokes the runtime
+    /// permissions of one app and clears "don't ask again", so the app asks again on next use. Grants
+    /// the system gives by default or fixes stay, as after a fresh install.
+    static func resetPermissions(_ package: String) -> String {
+        "p=\(package); n=0; for perm in $(dumpsys package $p | sed -n '/runtime permissions:/,/^ *[A-Za-z ]*:$/p' "
+            + "| grep -v -e GRANTED_BY_DEFAULT -e SYSTEM_FIXED -e POLICY_FIXED "
+            + "| grep -o '^ *[A-Za-z0-9_.]*: granted=' | sed 's/: granted=//' | sort -u); do "
+            + "pm revoke $p $perm 2>/dev/null; pm clear-permission-flags $p $perm user-set user-fixed 2>/dev/null; "
+            + "n=$((n+1)); done; echo $n"
+    }
+
+    /// `am start` prints "Error: …" lines on failure. Matching "Error" anywhere would also match an
+    /// activity name such as .ErrorReportActivity.
+    static func checkStart(_ output: String) throws {
+        let errors = output.split(whereSeparator: \.isNewline).map { String($0).trimmed }.filter { $0.hasPrefix("Error") }
+        if !errors.isEmpty { throw AppError(errors.joined(separator: "\n")) }
     }
 }
 
@@ -46,7 +67,8 @@ struct InstallAPKFeature: ActionFeature {
 
 enum APKInstaller {
     static func install(_ url: URL, _ context: DeviceContext) async throws -> String {
-        let output = try await context.adb.run(context.device, ["install", "-r", "-d", "-g", url.path])
+        // Copies the whole APK: minutes for a large one over USB or Wi-Fi.
+        let output = try await context.adb.run(context.device, ["install", "-r", "-d", "-g", url.path], timeout: .seconds(600))
         guard output.contains("Success") else { throw AppError(output.trimmed) }
         return "Installed \(url.lastPathComponent)"
     }
@@ -89,7 +111,7 @@ extension ForegroundAppActionFeature {
     )
     static let revokePermissions = ForegroundAppActionFeature(
         id: "app.revoke", title: "Permissions", symbol: "hand.raised.fill", isDestructive: true,
-        command: { "pm reset-permissions -p \($0.shellQuoted)" }, message: { "Permissions reset for \($0)" }
+        command: { AppCommands.resetPermissions($0.shellQuoted) }, message: { "Permissions reset for \($0)" }
     )
     static let uninstall = ForegroundAppActionFeature(
         id: "app.uninstall", title: "Uninstall", symbol: "trash.slash.fill", isDestructive: true,

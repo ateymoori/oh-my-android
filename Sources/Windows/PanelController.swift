@@ -96,7 +96,8 @@ final class PanelController {
 
     private func dockIfNeeded() {
         guard model.isPinned, model.dockToEmulator else { return updateDockTimer() }
-        guard let emulator = tracker.emulatorFrame(consolePort: model.devices?.selected?.consolePort) else { return }
+        let selected = model.devices?.selected
+        guard let emulator = tracker.emulatorFrame(consolePort: selected?.consolePort, avdName: selected?.avdName) else { return }
         let gap: CGFloat = 12
         let visible = NSScreen.screens.first { $0.frame.intersects(emulator) }?.visibleFrame ?? emulator
         var x = emulator.minX - Theme.panelSize.width - gap

@@ -137,6 +137,14 @@ struct Arguments: Sendable {
 
     func has(_ key: String) -> Bool { values[key].map { $0 != .null } ?? false }
 
+    /// The schema allows no other properties. A misspelled key must not fall back to a default:
+    /// `manage_app {action: "uninstall", packge: …}` would uninstall the app on screen.
+    func rejectUnknown() throws {
+        let unknown = values.keys.filter { parameters[$0] == nil }.sorted()
+        guard !unknown.isEmpty else { return }
+        throw ToolInputError("Unknown argument \(unknown.joined(separator: ", ")). Valid: \(parameters.keys.sorted().joined(separator: ", ")).")
+    }
+
     /// A string; for a parameter with allowed values, one of them.
     func string(_ key: String) throws -> String? {
         guard let value = values[key], value != .null else { return nil }

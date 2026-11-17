@@ -28,7 +28,7 @@ struct HeaderView: View {
             }
             ForEach(model.devices?.devices ?? []) { device in
                 Button {
-                    model.devices?.selected = device
+                    model.devices?.select(device)
                 } label: {
                     Label(device.problem.map { "\(device.displayName) — \($0)" } ?? device.displayName, systemImage: device.symbol)
                 }

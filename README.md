@@ -14,6 +14,7 @@
   <a href="#install"><img src="https://img.shields.io/badge/brew-oh--my--android-FBB040?logo=homebrew&logoColor=white" alt="Homebrew cask"></a>
   <img src="https://img.shields.io/badge/macOS-26%2B%20%C2%B7%20Apple%20silicon-000000?logo=apple" alt="macOS 26 or later, Apple silicon">
   <a href="https://androidweekly.net/issues/issue-747"><img src="https://img.shields.io/badge/Android%20Weekly-%23747-3DDC84" alt="Featured in Android Weekly #747"></a>
+  <a href="https://github.com/NipunaRanasinghe/awesome-ai-agents"><img src="https://img.shields.io/badge/Featured_in-Awesome_AI_Agents-2ea44f" alt="Featured in Awesome AI Agents"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <a href="https://github.com/ateymoori/oh-my-android/stargazers"><img src="https://img.shields.io/github/stars/ateymoori/oh-my-android?style=social" alt="GitHub stars"></a>
   <a href="https://x.com/ReadmeRadar"><img src="https://img.shields.io/badge/follow-%40ReadmeRadar-000000?logo=x" alt="Follow @ReadmeRadar on X"></a>

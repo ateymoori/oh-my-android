@@ -188,6 +188,7 @@ Other ways to add it:
 - **Claude Code plugin:** `/plugin marketplace add ateymoori/oh-my-android`, then `/plugin install oh-my-android@oh-my-android`
 - **Claude Desktop extension:** open `oh-my-android-<version>.mcpb` from the [latest release](https://github.com/ateymoori/oh-my-android/releases/latest)
 - **MCP Registry:** listed as `io.github.ateymoori/oh-my-android`
+- **Glama:** [![ateymoori/oh-my-android MCP server](https://glama.ai/mcp/servers/ateymoori/oh-my-android/badges/score.svg)](https://glama.ai/mcp/servers/ateymoori/oh-my-android)
 
 **You stay in control:** menu bar icon → **AI Agents** → *Off*, *Read only* or *Full control*. The server
 checks it on every call, so a change applies at once. Tools that can lose data are marked destructive,
